@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../shared/app_routes.dart';
 import '../viewmodels/auth_viewmodel.dart';
-import 'register_screen.dart';
-import '../screens/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -36,9 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+      Navigator.of(context).pushReplacementNamed(AppRoutes.home);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -159,11 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Register link
                   TextButton(
                     onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const RegisterScreen(),
-                        ),
-                      );
+                      Navigator.of(context).pushNamed(AppRoutes.register);
                     },
                     child: const Text("Don't have an account? Sign Up"),
                   ),
