@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../shared/app_routes.dart';
+import '../theme/cafe_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import 'login_screen.dart';
+import 'widgets/auth_underline_field.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -31,8 +34,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final viewModel = context.read<AuthViewModel>();
+    if (viewModel.isLoading) return;
+
+    FocusScope.of(context).unfocus();
+
     final success = await viewModel.signUp(
-      _emailController.text,
+      _emailController.text.trim(),
       _passwordController.text,
     );
 
@@ -44,11 +51,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(viewModel.errorMessage ?? 'Registration failed'),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text(viewModel.errorMessage ?? 'Dang ky that bai')),
       );
     }
   }
@@ -56,135 +59,194 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Account'),
-      ),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Join Local Cafe Hunter',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(26, 20, 26, 24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    icon: const Icon(
+                      Icons.arrow_circle_left_outlined,
+                      color: CafeColors.dark,
+                      size: 42,
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Create an account to discover cafes',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Email
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.email_outlined),
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Password
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outlined),
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                        ),
-                        onPressed: () {
-                          setState(() => _obscurePassword = !_obscurePassword);
-                        },
+                ),
+                const SizedBox(height: 8),
+                const LoginHero(),
+                const SizedBox(height: 22),
+                Text(
+                  'TAO TAI KHOAN\nLOCAL HUNTER',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 31,
+                        height: 1.15,
                       ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Confirm Password
-                  TextFormField(
-                    controller: _confirmController,
-                    obscureText: _obscureConfirm,
-                    decoration: InputDecoration(
-                      labelText: 'Confirm Password',
-                      prefixIcon: const Icon(Icons.lock_outlined),
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureConfirm
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                        ),
-                        onPressed: () {
-                          setState(() => _obscureConfirm = !_obscureConfirm);
-                        },
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Dang ky de luu quan, gom bo suu tap va viet review theo cach cua ban.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        height: 1.45,
                       ),
+                ),
+                const SizedBox(height: 28),
+                AuthUnderlineField(
+                  controller: _emailController,
+                  hintText: 'Email cua ban',
+                  icon: Icons.mail_outline_rounded,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Nhap email de tao tai khoan';
+                    }
+                    if (!value.contains('@')) {
+                      return 'Email chua dung dinh dang';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                AuthUnderlineField(
+                  controller: _passwordController,
+                  hintText: 'Mat khau',
+                  icon: Icons.lock_outline_rounded,
+                  obscureText: _obscurePassword,
+                  trailing: IconButton(
+                    onPressed: () {
+                      setState(() => _obscurePassword = !_obscurePassword);
+                    },
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: CafeColors.muted,
                     ),
-                    validator: (value) {
-                      if (value != _passwordController.text) {
-                        return 'Passwords do not match';
-                      }
-                      return null;
-                    },
                   ),
-                  const SizedBox(height: 24),
-
-                  // Register button
-                  Consumer<AuthViewModel>(
-                    builder: (context, vm, _) {
-                      return FilledButton(
-                        onPressed: vm.isLoading ? null : _handleRegister,
-                        child: vm.isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text('Create Account'),
-                      );
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Nhap mat khau';
+                    }
+                    if (value.length < 6) {
+                      return 'Mat khau can it nhat 6 ky tu';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                AuthUnderlineField(
+                  controller: _confirmController,
+                  hintText: 'Nhap lai mat khau',
+                  icon: Icons.verified_user_outlined,
+                  obscureText: _obscureConfirm,
+                  trailing: IconButton(
+                    onPressed: () {
+                      setState(() => _obscureConfirm = !_obscureConfirm);
                     },
+                    icon: Icon(
+                      _obscureConfirm
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: CafeColors.muted,
+                    ),
                   ),
-                ],
-              ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Xac nhan lai mat khau';
+                    }
+                    if (value != _passwordController.text) {
+                      return 'Mat khau xac nhan chua khop';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 34),
+                Consumer<AuthViewModel>(
+                  builder: (context, vm, _) {
+                    return FilledButton.icon(
+                      onPressed: vm.isLoading ? null : _handleRegister,
+                      icon: vm.isLoading
+                          ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: CafeColors.background,
+                              ),
+                            )
+                          : const Icon(Icons.how_to_reg_rounded, size: 24),
+                      label: Text(
+                        vm.isLoading
+                            ? 'Dang tao tai khoan...'
+                            : 'Tao tai khoan',
+                      ),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(58),
+                        backgroundColor: CafeColors.dark,
+                        foregroundColor: CafeColors.background,
+                        elevation: 6,
+                        shadowColor: CafeColors.dark.withValues(alpha: 0.35),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: CafeColors.surface.withValues(alpha: 0.72),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: CafeColors.dark.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.info_outline_rounded, color: CafeColors.dark),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Sau khi dang ky xong, app se dua ban thang vao Home neu Supabase tra session hop le.',
+                          style: TextStyle(
+                            color: CafeColors.dark,
+                            fontWeight: FontWeight.w600,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextButton(
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pushReplacementNamed(AppRoutes.login),
+                  style: TextButton.styleFrom(foregroundColor: CafeColors.dark),
+                  child: const Text(
+                    'Da co tai khoan? Quay ve dang nhap',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
