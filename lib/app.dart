@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'auth/login_screen.dart';
+import 'auth/register_screen.dart';
+import 'screens/home_screen.dart';
+import 'services/auth_service.dart';
+import 'shared/app_routes.dart';
 import 'viewmodels/auth_viewmodel.dart';
 
 class LocalCafeHunterApp extends StatelessWidget {
@@ -20,11 +25,39 @@ class LocalCafeHunterApp extends StatelessWidget {
           ),
           useMaterial3: true,
         ),
-        home: const LoginScreen(),
+        home: const _AuthGate(),
         routes: {
-          '/login': (context) => const LoginScreen(),
+          AppRoutes.login: (context) => const LoginScreen(),
+          AppRoutes.register: (context) => const RegisterScreen(),
+          AppRoutes.home: (context) => const HomeScreen(),
         },
       ),
+    );
+  }
+}
+
+class _AuthGate extends StatelessWidget {
+  const _AuthGate();
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: AuthService().authStateChanges,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (snapshot.data != null) {
+          return const HomeScreen();
+        }
+
+        return const LoginScreen();
+      },
     );
   }
 }

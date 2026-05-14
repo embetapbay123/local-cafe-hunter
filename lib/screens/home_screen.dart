@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../shared/app_routes.dart';
 import '../viewmodels/auth_viewmodel.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -16,7 +18,7 @@ class HomeScreen extends StatelessWidget {
             onPressed: () async {
               await context.read<AuthViewModel>().signOut();
               if (context.mounted) {
-                Navigator.of(context).pushReplacementNamed('/login');
+                Navigator.of(context).pushReplacementNamed(AppRoutes.login);
               }
             },
           ),
