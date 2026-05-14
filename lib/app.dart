@@ -6,6 +6,7 @@ import 'auth/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
 import 'shared/app_routes.dart';
+import 'theme/cafe_theme.dart';
 import 'viewmodels/auth_viewmodel.dart';
 
 class LocalCafeHunterApp extends StatelessWidget {
@@ -18,13 +19,7 @@ class LocalCafeHunterApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Local Cafe Hunter',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF6F4E37),
-            brightness: Brightness.light,
-          ),
-          useMaterial3: true,
-        ),
+        theme: buildCafeTheme(),
         home: const _AuthGate(),
         routes: {
           AppRoutes.login: (context) => const LoginScreen(),
@@ -47,7 +42,7 @@ class _AuthGate extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(color: CafeColors.dark),
             ),
           );
         }
