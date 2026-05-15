@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import 'auth/login_screen.dart';
 import 'auth/register_screen.dart';
+import 'cafes/repositories/local_cafe_repository.dart';
+import 'cafes/viewmodels/cafe_viewmodel.dart';
 import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
 import 'shared/app_routes.dart';
@@ -14,8 +16,13 @@ class LocalCafeHunterApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AuthViewModel(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthViewModel()),
+        ChangeNotifierProvider(
+          create: (_) => CafeViewModel(LocalCafeRepository())..load(),
+        ),
+      ],
       child: MaterialApp(
         title: 'Local Cafe Hunter',
         debugShowCheckedModeBanner: false,
