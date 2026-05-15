@@ -1,0 +1,108 @@
+import '../data/local_cafe_seed.dart';
+import '../models/cafe.dart';
+import '../models/collection.dart';
+import '../models/review.dart';
+import '../models/user_profile.dart';
+import 'cafe_repository.dart';
+
+class LocalCafeRepository implements CafeRepository {
+  List<Cafe> _cafes = List<Cafe>.from(LocalCafeSeed.cafes);
+  List<CafeCollection> _collections = List<CafeCollection>.from(
+    LocalCafeSeed.collections,
+  );
+
+  @override
+  Future<void> addReview(
+    String cafeId,
+    Review review, {
+    String? imagePath,
+  }) async {
+    _cafes = _cafes.map((cafe) {
+      if (cafe.id != cafeId) return cafe;
+      final updatedReviews = [review, ...cafe.reviews];
+      final average = updatedReviews
+              .map((item) => item.rating)
+              .reduce((left, right) => left + right) /
+          updatedReviews.length;
+      return cafe.copyWith(
+        reviews: updatedReviews,
+        reviewCount: updatedReviews.length,
+        rating: double.parse(average.toStringAsFixed(1)),
+      );
+    }).toList();
+  }
+
+  @override
+  Future<Cafe?> getCafeById(String id) async {
+    try {
+      return _cafes.firstWhere((cafe) => cafe.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<List<Cafe>> getCafes() async => List<Cafe>.from(_cafes);
+
+  @override
+  Future<List<CafeCollection>> getCollections() async =>
+      List<CafeCollection>.from(_collections);
+
+  @override
+  Future<List<Cafe>> getFavouriteCafes() async {
+    return _cafes.where((cafe) => cafe.isFavourite).toList();
+  }
+
+  @override
+  Future<UserProfile> getUserProfile() async => LocalCafeSeed.userProfile;
+
+  @override
+  Future<List<Review>> getReviewHistory() async {
+    final reviews = _cafes.expand((cafe) => cafe.reviews).toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return reviews;
+  }
+
+  @override
+  Future<List<Cafe>> searchCafes({
+    required String query,
+    List<String> filters = const [],
+  }) async {
+    final normalizedQuery = query.trim().toLowerCase();
+    return _cafes.where((cafe) {
+      final queryMatches = normalizedQuery.isEmpty ||
+          cafe.name.toLowerCase().contains(normalizedQuery) ||
+          cafe.address.toLowerCase().contains(normalizedQuery);
+      final filterMatches = filters.isEmpty ||
+          filters.every(
+            (filter) => cafe.amenities.any(
+              (amenity) => amenity.toLowerCase() == filter.toLowerCase(),
+            ),
+          );
+      return queryMatches && filterMatches;
+    }).toList();
+  }
+
+  @override
+  Future<void> toggleFavourite(String cafeId) async {
+    _cafes = _cafes.map((cafe) {
+      if (cafe.id != cafeId) return cafe;
+      return cafe.copyWith(isFavourite: !cafe.isFavourite);
+    }).toList();
+  }
+
+  @override
+  Future<void> updateUserProfile(UserProfile profile) async {}
+
+  @override
+  Future<void> createCollection(String name, List<String> cafeIds) async {
+    _collections = [
+      ..._collections,
+      CafeCollection(
+        id: 'local-${DateTime.now().microsecondsSinceEpoch}',
+        name: name,
+        cafeIds: cafeIds,
+      ),
+    ];
+  }
+}
