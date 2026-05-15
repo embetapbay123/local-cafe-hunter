@@ -94,16 +94,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final pages = [
           _DiscoverPage(searchController: _searchController),
-          const _ComingSoonPage(
-            title: 'Search dang duoc tach thanh nhanh rieng',
-            subtitle:
-                'Branch tiep theo se bo sung search feature day du voi filter va compare.',
-            icon: Icons.search_rounded,
-          ),
+          _SearchPage(searchController: _searchController),
           const _ComingSoonPage(
             title: 'Saved list se toi o branch sau',
             subtitle:
-                'Tam thoi ban van co the bam tim o Home de danh dau nhanh cac quan can luu.',
+                'Tam thoi ban van co the bam tim o Home hoac Search de danh dau nhanh cac quan can luu.',
             icon: Icons.favorite_rounded,
           ),
           _ProfilePreview(onSignedOut: _handleSignOut),
@@ -302,6 +297,144 @@ class _DiscoverPage extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _SearchPage extends StatelessWidget {
+  const _SearchPage({required this.searchController});
+
+  final TextEditingController searchController;
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<CafeViewModel>(
+      builder: (context, cafeViewModel, _) {
+        final cafes = cafeViewModel.visibleCafes;
+        final activeFilter = cafeViewModel.selectedFilter;
+
+        return SafeArea(
+          bottom: false,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 120),
+            children: [
+              _PageHeading(
+                eyebrow: 'SEARCH FEATURE',
+                title: 'Tim nhanh quan hop gu ngay tren mot man rieng.',
+                subtitle:
+                    'PR nay mo tab Search that su, con sort, radius va filter nang cao de lai cho branch search-advanced.',
+                trailing: cafeViewModel.hasActiveSearch
+                    ? IconButton.filledTonal(
+                        onPressed: () {
+                          searchController.clear();
+                          cafeViewModel.clearSearch();
+                        },
+                        icon: const Icon(Icons.close_rounded),
+                      )
+                    : null,
+              ),
+              const SizedBox(height: 18),
+              _SearchBar(controller: searchController),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  ChoiceChip(
+                    selected: activeFilter == null,
+                    label: const Text('Tat ca'),
+                    onSelected: (_) => cafeViewModel.setSelectedFilter(null),
+                  ),
+                  ...cafeViewModel.availableFilters.map((filter) {
+                    final selected = activeFilter == filter;
+                    return ChoiceChip(
+                      selected: selected,
+                      label: Text(filter),
+                      onSelected: (_) => cafeViewModel.setSelectedFilter(
+                        selected ? null : filter,
+                      ),
+                    );
+                  }),
+                ],
+              ),
+              const SizedBox(height: 18),
+              _SearchSummaryCard(
+                resultCount: cafes.length,
+                query: cafeViewModel.searchQuery,
+                filter: activeFilter,
+              ),
+              const SizedBox(height: 20),
+              const _SectionLabel(
+                title: 'Ket qua tim kiem',
+                subtitle: 'Map va bo loc nang cao se duoc noi tiep sau branch nay',
+              ),
+              const SizedBox(height: 12),
+              if (cafes.isEmpty)
+                const _EmptyState(
+                  title: 'Khong tim thay quan phu hop',
+                  subtitle:
+                      'Thu bo chip dang chon hoac nhap ten khu vuc, ten quan khac.',
+                )
+              else
+                ...cafes.map(
+                  (cafe) => Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: _CafeCard(
+                      cafe: cafe,
+                      onFavouriteToggle: () =>
+                          cafeViewModel.toggleFavourite(cafe.id),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SearchSummaryCard extends StatelessWidget {
+  const _SearchSummaryCard({
+    required this.resultCount,
+    required this.query,
+    required this.filter,
+  });
+
+  final int resultCount;
+  final String query;
+  final String? filter;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasQuery = query.isNotEmpty;
+    final hasFilter = filter != null;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: CafeColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: CafeColors.dark.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$resultCount ket qua dang san sang',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            hasQuery || hasFilter
+                ? 'Dang loc theo ${hasQuery ? '"$query"' : 'tat ca khu vuc'}${hasFilter ? ' va $filter' : ''}.'
+                : 'Chua co bo loc nao duoc ap dung. Day la luong search co ban cua app.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.4),
+          ),
+        ],
+      ),
     );
   }
 }

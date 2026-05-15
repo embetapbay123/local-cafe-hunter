@@ -32,8 +32,15 @@ class CafeViewModel extends ChangeNotifier {
   List<Review> get reviewHistory => List<Review>.unmodifiable(_reviewHistory);
   UserProfile? get userProfile => _userProfile;
 
-  List<String> get availableFilters =>
-      const ['Wifi manh', 'May lanh', 'Yen tinh'];
+  List<String> get availableFilters {
+    final filters = <String>{};
+    for (final cafe in _cafes) {
+      filters.addAll(cafe.amenities);
+    }
+    return filters.toList()..sort();
+  }
+
+  bool get hasActiveSearch => _searchQuery.isNotEmpty || _selectedFilter != null;
 
   List<Cafe> get visibleCafes {
     final filter = _selectedFilter;
@@ -89,6 +96,13 @@ class CafeViewModel extends ChangeNotifier {
   void setSelectedFilter(String? filter) {
     if (_selectedFilter == filter) return;
     _selectedFilter = filter;
+    notifyListeners();
+  }
+
+  void clearSearch() {
+    if (_searchQuery.isEmpty && _selectedFilter == null) return;
+    _searchQuery = '';
+    _selectedFilter = null;
     notifyListeners();
   }
 
