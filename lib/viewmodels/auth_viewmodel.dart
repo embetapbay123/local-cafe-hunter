@@ -16,6 +16,8 @@ class AuthViewModel extends ChangeNotifier {
 
   /// Sign in with email + password
   Future<bool> signIn(String email, String password) async {
+    if (isLoading) return false;
+
     _state = AuthState.loading;
     _errorMessage = null;
     notifyListeners();
@@ -34,6 +36,8 @@ class AuthViewModel extends ChangeNotifier {
 
   /// Register new account
   Future<bool> signUp(String email, String password) async {
+    if (isLoading) return false;
+
     _state = AuthState.loading;
     _errorMessage = null;
     notifyListeners();
