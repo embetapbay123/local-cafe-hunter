@@ -3,6 +3,7 @@ import '../models/cafe.dart';
 import '../models/collection.dart';
 import '../models/review.dart';
 import '../models/user_profile.dart';
+import '../utils/geo_math.dart';
 import 'cafe_repository.dart';
 
 class LocalCafeRepository implements CafeRepository {
@@ -81,6 +82,49 @@ class LocalCafeRepository implements CafeRepository {
           );
       return queryMatches && filterMatches;
     }).toList();
+  }
+
+  @override
+  Future<List<Cafe>> getNearbyCafes({
+    required double latitude,
+    required double longitude,
+    double radiusMeters = 2500,
+    String query = '',
+    List<String> filters = const [],
+  }) async {
+    final normalizedQuery = query.trim().toLowerCase();
+    final normalizedFilters = filters.map((filter) => filter.toLowerCase());
+
+    final nearbyCafes = _cafes.map((cafe) {
+      final distanceMeters = calculateDistanceMeters(
+        startLatitude: latitude,
+        startLongitude: longitude,
+        endLatitude: cafe.latitude,
+        endLongitude: cafe.longitude,
+      );
+
+      return cafe.copyWith(distanceMeters: distanceMeters);
+    }).where((cafe) {
+      final queryMatches = normalizedQuery.isEmpty ||
+          cafe.name.toLowerCase().contains(normalizedQuery) ||
+          cafe.address.toLowerCase().contains(normalizedQuery);
+      final filterMatches = normalizedFilters.isEmpty ||
+          normalizedFilters.every(
+            (filter) => cafe.amenities.any(
+              (amenity) => amenity.toLowerCase() == filter,
+            ),
+          );
+      final distanceMatches = (cafe.distanceMeters ?? double.infinity) <=
+          radiusMeters;
+      return queryMatches && filterMatches && distanceMatches;
+    }).toList()
+      ..sort((left, right) {
+        final leftDistance = left.distanceMeters ?? double.infinity;
+        final rightDistance = right.distanceMeters ?? double.infinity;
+        return leftDistance.compareTo(rightDistance);
+      });
+
+    return nearbyCafes;
   }
 
   @override

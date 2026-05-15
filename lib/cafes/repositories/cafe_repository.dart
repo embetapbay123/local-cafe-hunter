@@ -10,6 +10,13 @@ abstract class CafeRepository {
     required String query,
     List<String> filters = const [],
   });
+  Future<List<Cafe>> getNearbyCafes({
+    required double latitude,
+    required double longitude,
+    double radiusMeters = 2500,
+    String query = '',
+    List<String> filters = const [],
+  });
   Future<List<Cafe>> getFavouriteCafes();
   Future<List<Review>> getReviewHistory();
   Future<List<CafeCollection>> getCollections();
