@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../cafes/models/cafe.dart';
 import '../cafes/viewmodels/cafe_viewmodel.dart';
+import '../screens/cafe_detail_screen.dart';
 import '../theme/cafe_theme.dart';
 
 class MapScreen extends StatelessWidget {
@@ -70,10 +71,7 @@ class MapScreen extends StatelessWidget {
                           highlightedCafe:
                               cafeViewModel.highlightedNearbyCafe,
                           onMarkerPressed: (cafe) {
-                            cafeViewModel.setMapFocus(
-                              latitude: cafe.latitude,
-                              longitude: cafe.longitude,
-                            );
+                            _openCafeDetail(context, cafe.id);
                           },
                         ),
                       ),
@@ -153,6 +151,8 @@ class MapScreen extends StatelessWidget {
                                         longitude: cafe.longitude,
                                       );
                                     },
+                                    onOpenDetail: () =>
+                                        _openCafeDetail(context, cafe.id),
                                     onFavouriteToggle: () => cafeViewModel
                                         .toggleFavourite(cafe.id),
                                   );
@@ -167,6 +167,14 @@ class MapScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  void _openCafeDetail(BuildContext context, String cafeId) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CafeDetailScreen(cafeId: cafeId),
+      ),
     );
   }
 }
@@ -378,11 +386,13 @@ class _MapCafeCard extends StatelessWidget {
   const _MapCafeCard({
     required this.cafe,
     required this.onFocus,
+    required this.onOpenDetail,
     required this.onFavouriteToggle,
   });
 
   final Cafe cafe;
   final VoidCallback onFocus;
+  final VoidCallback onOpenDetail;
   final VoidCallback onFavouriteToggle;
 
   @override
@@ -438,10 +448,15 @@ class _MapCafeCard extends StatelessWidget {
             ),
             const Spacer(),
             FilledButton.tonal(
-              onPressed: onFocus,
+              onPressed: onOpenDetail,
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),
               ),
+              child: const Text('Mo chi tiet'),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: onFocus,
               child: const Text('Doi tam map ve day'),
             ),
           ],

@@ -3,10 +3,19 @@ import 'package:provider/provider.dart';
 
 import '../cafes/models/cafe.dart';
 import '../cafes/viewmodels/cafe_viewmodel.dart';
+import '../screens/cafe_detail_screen.dart';
 import '../screens/map_screen.dart';
 import '../shared/app_routes.dart';
 import '../theme/cafe_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
+
+void _openCafeDetailScreen(BuildContext context, String cafeId) {
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => CafeDetailScreen(cafeId: cafeId),
+    ),
+  );
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -208,6 +217,8 @@ class _DiscoverPage extends StatelessWidget {
                         final cafe = featured[index];
                         return _FeaturedCafeCard(
                           cafe: cafe,
+                          onOpenDetail: () =>
+                              _openCafeDetailScreen(context, cafe.id),
                           onFavouriteToggle: () =>
                               cafeViewModel.toggleFavourite(cafe.id),
                         );
@@ -233,6 +244,8 @@ class _DiscoverPage extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 14),
                       child: _CafeCard(
                         cafe: cafe,
+                        onOpenDetail: () =>
+                            _openCafeDetailScreen(context, cafe.id),
                         onFavouriteToggle: () =>
                             cafeViewModel.toggleFavourite(cafe.id),
                       ),
@@ -300,6 +313,7 @@ class _DiscoverPage extends StatelessWidget {
       },
     );
   }
+
 }
 
 class _SearchPage extends StatelessWidget {
@@ -393,6 +407,8 @@ class _SearchPage extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 14),
                     child: _CafeCard(
                       cafe: cafe,
+                      onOpenDetail: () =>
+                          _openCafeDetailScreen(context, cafe.id),
                       onFavouriteToggle: () =>
                           cafeViewModel.toggleFavourite(cafe.id),
                     ),
@@ -789,93 +805,99 @@ class _SectionLabel extends StatelessWidget {
 class _FeaturedCafeCard extends StatelessWidget {
   const _FeaturedCafeCard({
     required this.cafe,
+    required this.onOpenDetail,
     required this.onFavouriteToggle,
   });
 
   final Cafe cafe;
+  final VoidCallback onOpenDetail;
   final VoidCallback onFavouriteToggle;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: 250,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(26),
-          gradient: LinearGradient(colors: cafe.gradientColors),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+      child: InkWell(
+        onTap: onOpenDetail,
+        borderRadius: BorderRadius.circular(26),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(26),
+            gradient: LinearGradient(colors: cafe.gradientColors),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        cafe.priceRange,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(999),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: onFavouriteToggle,
+                      icon: Icon(
+                        cafe.isFavourite
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        color: Colors.white,
+                      ),
                     ),
-                    child: Text(
-                      cafe.priceRange,
+                  ],
+                ),
+                const Spacer(),
+                Text(
+                  cafe.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  cafe.shortNote,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFFF6EBDD),
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(Icons.star_rounded, color: Colors.white, size: 18),
+                    const SizedBox(width: 4),
+                    Text(
+                      cafe.rating.toStringAsFixed(1),
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: onFavouriteToggle,
-                    icon: Icon(
-                      cafe.isFavourite
-                          ? Icons.favorite_rounded
-                          : Icons.favorite_border_rounded,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              Text(
-                cafe.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 21,
-                  fontWeight: FontWeight.w900,
+                  ],
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                cafe.shortNote,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFFF6EBDD),
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Icon(Icons.star_rounded, color: Colors.white, size: 18),
-                  const SizedBox(width: 4),
-                  Text(
-                    cafe.rating.toStringAsFixed(1),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -886,85 +908,91 @@ class _FeaturedCafeCard extends StatelessWidget {
 class _CafeCard extends StatelessWidget {
   const _CafeCard({
     required this.cafe,
+    required this.onOpenDetail,
     required this.onFavouriteToggle,
   });
 
   final Cafe cafe;
+  final VoidCallback onOpenDetail;
   final VoidCallback onFavouriteToggle;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: CafeColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: CafeColors.dark.withValues(alpha: 0.08),
+    return InkWell(
+      onTap: onOpenDetail,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: CafeColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: CafeColors.dark.withValues(alpha: 0.08),
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 92,
-            height: 92,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              gradient: LinearGradient(colors: cafe.gradientColors),
+        child: Row(
+          children: [
+            Container(
+              width: 92,
+              height: 92,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                gradient: LinearGradient(colors: cafe.gradientColors),
+              ),
+              child: const Icon(
+                Icons.local_cafe_rounded,
+                size: 42,
+                color: Colors.white,
+              ),
             ),
-            child: const Icon(
-              Icons.local_cafe_rounded,
-              size: 42,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  cafe.name,
-                  style: const TextStyle(
-                    color: CafeColors.dark,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    cafe.name,
+                    style: const TextStyle(
+                      color: CafeColors.dark,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  cafe.address,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: CafeColors.muted,
-                    height: 1.3,
+                  const SizedBox(height: 6),
+                  Text(
+                    cafe.address,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: CafeColors.muted,
+                      height: 1.3,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _InlineChip(label: cafe.priceRange),
-                    ...cafe.amenities
-                        .take(2)
-                        .map((amenity) => _InlineChip(label: amenity)),
-                  ],
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _InlineChip(label: cafe.priceRange),
+                      ...cafe.amenities
+                          .take(2)
+                          .map((amenity) => _InlineChip(label: amenity)),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          IconButton(
-            onPressed: onFavouriteToggle,
-            icon: Icon(
-              cafe.isFavourite
-                  ? Icons.favorite_rounded
-                  : Icons.favorite_border_rounded,
-              color: cafe.isFavourite ? CafeColors.heart : CafeColors.dark,
+            IconButton(
+              onPressed: onFavouriteToggle,
+              icon: Icon(
+                cafe.isFavourite
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
+                color: cafe.isFavourite ? CafeColors.heart : CafeColors.dark,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
