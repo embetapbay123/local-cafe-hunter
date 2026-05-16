@@ -162,6 +162,29 @@ class CafeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> addReview({
+    required String cafeId,
+    required double rating,
+    required String comment,
+  }) async {
+    final profile = _userProfile;
+    final review = Review(
+      id: 'review-${DateTime.now().microsecondsSinceEpoch}',
+      cafeId: cafeId,
+      userId: profile?.userId ?? 'local-demo-user',
+      authorName: profile?.displayName ?? 'Local Hunter',
+      rating: rating,
+      comment: comment.trim(),
+      createdAt: DateTime.now(),
+    );
+
+    await _repository.addReview(cafeId, review);
+    _cafes = await _repository.getCafes();
+    _reviewHistory = await _repository.getReviewHistory();
+    await _loadNearbyCafes(notify: false);
+    notifyListeners();
+  }
+
   void _initializeMapCenter() {
     if (_cafes.isEmpty) {
       _mapCenterLatitude = null;

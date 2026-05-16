@@ -6,6 +6,7 @@ import '../cafes/models/menu_item.dart';
 import '../cafes/models/review.dart';
 import '../cafes/viewmodels/cafe_viewmodel.dart';
 import '../screens/menu_screen.dart';
+import '../screens/review_screen.dart';
 import '../theme/cafe_theme.dart';
 
 class CafeDetailScreen extends StatelessWidget {
@@ -108,12 +109,27 @@ class CafeDetailScreen extends StatelessWidget {
                       _SectionCard(
                         title: 'Review preview',
                         subtitle:
-                            'Branch review-feature se bo sung feed review day du va thao tac gui review.',
+                            'Da mo duong vao feed review day du va thao tac gui review, trong khi review-management van de lai cho branch sau.',
                         child: Column(
-                          children: cafe.reviews
-                              .take(2)
-                              .map((review) => _ReviewPreviewTile(review: review))
-                              .toList(),
+                          children: [
+                            ...cafe.reviews
+                                .take(2)
+                                .map((review) => _ReviewPreviewTile(review: review)),
+                            const SizedBox(height: 8),
+                            FilledButton.tonal(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => ReviewScreen(cafeId: cafe.id),
+                                  ),
+                                );
+                              },
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size.fromHeight(48),
+                              ),
+                              child: const Text('Xem va gui review'),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -124,7 +140,7 @@ class CafeDetailScreen extends StatelessWidget {
                           children: [
                             _BranchNote(text: 'Menu da duoc tach thanh screen rieng o menu-feature.'),
                             _BranchNote(
-                              text: 'Review list va review submission se toi o review-feature.',
+                              text: 'Review list va review submission da duoc tach thanh screen rieng o review-feature.',
                             ),
                             _BranchNote(
                               text: 'Saved va collections van duoc tach sang cac branch sau.',
