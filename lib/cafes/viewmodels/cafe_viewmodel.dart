@@ -76,6 +76,15 @@ class CafeViewModel extends ChangeNotifier {
   Cafe? get highlightedNearbyCafe =>
       _nearbyCafes.isEmpty ? null : _nearbyCafes.first;
 
+  Cafe? getCafeById(String cafeId) {
+    for (final cafe in _cafes) {
+      if (cafe.id == cafeId) {
+        return cafe;
+      }
+    }
+    return null;
+  }
+
   Future<void> load() async {
     _isLoading = true;
     _errorMessage = null;
