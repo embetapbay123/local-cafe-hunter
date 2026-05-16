@@ -5,6 +5,7 @@ import '../cafes/models/cafe.dart';
 import '../cafes/models/menu_item.dart';
 import '../cafes/models/review.dart';
 import '../cafes/viewmodels/cafe_viewmodel.dart';
+import '../screens/menu_screen.dart';
 import '../theme/cafe_theme.dart';
 
 class CafeDetailScreen extends StatelessWidget {
@@ -80,12 +81,27 @@ class CafeDetailScreen extends StatelessWidget {
                       _SectionCard(
                         title: 'Menu preview',
                         subtitle:
-                            'Branch menu-feature se mo rong toan bo menu va nhom mon.',
+                            'Da mo duong vao menu day du, nhung review flow van duoc giu cho branch sau.',
                         child: Column(
-                          children: cafe.menu
-                              .take(2)
-                              .map((item) => _MenuPreviewTile(item: item))
-                              .toList(),
+                          children: [
+                            ...cafe.menu
+                                .take(2)
+                                .map((item) => _MenuPreviewTile(item: item)),
+                            const SizedBox(height: 8),
+                            FilledButton.tonal(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => MenuScreen(cafeId: cafe.id),
+                                  ),
+                                );
+                              },
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size.fromHeight(48),
+                              ),
+                              child: const Text('Xem toan bo menu'),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -106,7 +122,7 @@ class CafeDetailScreen extends StatelessWidget {
                         child: const Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _BranchNote(text: 'Menu day du se toi o menu-feature.'),
+                            _BranchNote(text: 'Menu da duoc tach thanh screen rieng o menu-feature.'),
                             _BranchNote(
                               text: 'Review list va review submission se toi o review-feature.',
                             ),
