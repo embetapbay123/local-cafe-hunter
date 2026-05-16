@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../cafes/models/cafe.dart';
 import '../cafes/viewmodels/cafe_viewmodel.dart';
+import '../screens/map_screen.dart';
 import '../shared/app_routes.dart';
 import '../theme/cafe_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -319,10 +320,10 @@ class _SearchPage extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 18, 16, 120),
             children: [
               _PageHeading(
-                eyebrow: 'SEARCH FEATURE',
+                eyebrow: 'SEARCH + MAP',
                 title: 'Tim nhanh quan hop gu ngay tren mot man rieng.',
                 subtitle:
-                    'PR nay mo tab Search that su, con sort, radius va filter nang cao de lai cho branch search-advanced.',
+                    'Search da live va map explorer co the mo truc tiep tu day. Sort, radius va filter nang cao van de lai cho branch search-advanced.',
                 trailing: cafeViewModel.hasActiveSearch
                     ? IconButton.filledTonal(
                         onPressed: () {
@@ -363,10 +364,21 @@ class _SearchPage extends StatelessWidget {
                 query: cafeViewModel.searchQuery,
                 filter: activeFilter,
               ),
+              const SizedBox(height: 16),
+              _MapLaunchCard(
+                nearbyCount: cafeViewModel.nearbyCafes.length,
+                onOpenMap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const MapScreen(),
+                    ),
+                  );
+                },
+              ),
               const SizedBox(height: 20),
               const _SectionLabel(
                 title: 'Ket qua tim kiem',
-                subtitle: 'Map va bo loc nang cao se duoc noi tiep sau branch nay',
+                subtitle: 'Map explorer da co, bo loc nang cao se duoc noi tiep sau branch nay',
               ),
               const SizedBox(height: 12),
               if (cafes.isEmpty)
@@ -432,6 +444,78 @@ class _SearchSummaryCard extends StatelessWidget {
                 ? 'Dang loc theo ${hasQuery ? '"$query"' : 'tat ca khu vuc'}${hasFilter ? ' va $filter' : ''}.'
                 : 'Chua co bo loc nao duoc ap dung. Day la luong search co ban cua app.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.4),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MapLaunchCard extends StatelessWidget {
+  const _MapLaunchCard({
+    required this.nearbyCount,
+    required this.onOpenMap,
+  });
+
+  final int nearbyCount;
+  final VoidCallback onOpenMap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2E2218), Color(0xFF8A633C)],
+        ),
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'MAP EXPLORER',
+                  style: TextStyle(
+                    color: Color(0xFFF6EBDD),
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Mo ban do gia lap tu toa do cafe hien co, tap trung vao cac diem gan nhat.',
+                  style: TextStyle(
+                    color: Colors.white,
+                    height: 1.4,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  '$nearbyCount diem dang san sang cho luong map.',
+                  style: const TextStyle(
+                    color: Color(0xFFF7EEDF),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          FilledButton(
+            onPressed: onOpenMap,
+            style: FilledButton.styleFrom(
+              backgroundColor: CafeColors.surface,
+              foregroundColor: CafeColors.dark,
+              minimumSize: const Size(0, 54),
+            ),
+            child: const Text('Mo map'),
           ),
         ],
       ),
