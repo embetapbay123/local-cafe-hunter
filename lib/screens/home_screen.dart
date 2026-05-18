@@ -105,12 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final pages = [
           _DiscoverPage(searchController: _searchController),
           _SearchPage(searchController: _searchController),
-          const _ComingSoonPage(
-            title: 'Saved list se toi o branch sau',
-            subtitle:
-                'Tam thoi ban van co the bam tim o Home hoac Search de danh dau nhanh cac quan can luu.',
-            icon: Icons.favorite_rounded,
-          ),
+          const _SavedPage(),
           _ProfilePreview(onSignedOut: _handleSignOut),
         ];
 
@@ -422,6 +417,83 @@ class _SearchPage extends StatelessWidget {
   }
 }
 
+class _SavedPage extends StatelessWidget {
+  const _SavedPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<CafeViewModel>(
+      builder: (context, cafeViewModel, _) {
+        final savedCafes = cafeViewModel.favouriteCafes;
+        return SafeArea(
+          bottom: false,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 120),
+            children: [
+              const _PageHeading(
+                eyebrow: 'SAVED CAFES',
+                title: 'Danh sach quan da luu da san sang.',
+                subtitle:
+                    'Branch nay tap trung vao saved list de truy cap nhanh cac quan yeu thich.',
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: CafeColors.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: CafeColors.dark.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.favorite_rounded,
+                      color: CafeColors.heart,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '${savedCafes.length} quan da duoc danh dau luu.',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              const _SectionLabel(
+                title: 'Truy cap nhanh',
+                subtitle: 'Mo chi tiet hoac bo luu truc tiep tu danh sach nay',
+              ),
+              const SizedBox(height: 12),
+              if (savedCafes.isEmpty)
+                const _EmptyState(
+                  title: 'Ban chua luu quan nao',
+                  subtitle:
+                      'Bam tim o Home, Search, hoac Detail de dua quan vao danh sach Saved.',
+                )
+              else
+                ...savedCafes.map(
+                  (cafe) => Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: _CafeCard(
+                      cafe: cafe,
+                      onOpenDetail: () => _openCafeDetailScreen(context, cafe.id),
+                      onFavouriteToggle: () =>
+                          cafeViewModel.toggleFavourite(cafe.id),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _SearchSummaryCard extends StatelessWidget {
   const _SearchSummaryCard({
     required this.resultCount,
@@ -610,38 +682,6 @@ class _ProfilePreview extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _ComingSoonPage extends StatelessWidget {
-  const _ComingSoonPage({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-  });
-
-  final String title;
-  final String subtitle;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 120),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 40, color: CafeColors.dark),
-            const SizedBox(height: 18),
-            Text(title, style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 10),
-            Text(subtitle, style: Theme.of(context).textTheme.bodyLarge),
-          ],
-        ),
-      ),
     );
   }
 }
