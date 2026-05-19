@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../cafes/models/cafe.dart';
+import '../cafes/models/collection.dart';
 import '../cafes/viewmodels/cafe_viewmodel.dart';
 import '../screens/cafe_detail_screen.dart';
 import '../screens/map_screen.dart';
@@ -632,7 +633,7 @@ class _ProfilePreview extends StatelessWidget {
                   eyebrow: 'PROFILE PREVIEW',
                   title: 'Profile shell da san sang.',
                   subtitle:
-                      'Thong tin chi tiet, collections va review history se duoc tach thanh branch rieng.',
+                      'Collections da co danh sach de mo nhanh. Profile chi tiet va review history se tiep tuc mo rong o branch sau.',
                 ),
                 const SizedBox(height: 20),
                 Container(
@@ -677,11 +678,92 @@ class _ProfilePreview extends StatelessWidget {
                     ],
                   ),
                 ),
+                const SizedBox(height: 18),
+                const _SectionLabel(
+                  title: 'Collections',
+                  subtitle: 'Tap hop quan theo muc dich de mo chi tiet nhanh',
+                ),
+                const SizedBox(height: 12),
+                if (cafeViewModel.collections.isEmpty)
+                  const _EmptyState(
+                    title: 'Chua co collection nao',
+                    subtitle: 'Ban co the tao va quan ly collection o branch tiep theo.',
+                  )
+                else
+                  ...cafeViewModel.collections.map(
+                    (collection) {
+                      final cafesInCollection = collection.cafeIds
+                          .map(cafeViewModel.getCafeById)
+                          .whereType<Cafe>()
+                          .toList();
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _CollectionCard(
+                          collection: collection,
+                          cafes: cafesInCollection,
+                        ),
+                      );
+                    },
+                  ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _CollectionCard extends StatelessWidget {
+  const _CollectionCard({
+    required this.collection,
+    required this.cafes,
+  });
+
+  final CafeCollection collection;
+  final List<Cafe> cafes;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: CafeColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: CafeColors.dark.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            collection.name,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${cafes.length} quan',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 10),
+          if (cafes.isEmpty)
+            const Text('Collection nay chua co quan nao.')
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: cafes.map((cafe) {
+                return ActionChip(
+                  label: Text(cafe.name),
+                  onPressed: () => _openCafeDetailScreen(context, cafe.id),
+                );
+              }).toList(),
+            ),
+        ],
+      ),
     );
   }
 }
