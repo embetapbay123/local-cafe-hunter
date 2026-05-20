@@ -622,94 +622,310 @@ class _ProfilePreview extends StatelessWidget {
     return Consumer<CafeViewModel>(
       builder: (context, cafeViewModel, _) {
         final profile = cafeViewModel.userProfile;
+        final savedCafes = cafeViewModel.favouriteCafes;
         return SafeArea(
           bottom: false,
-          child: Padding(
+          child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 18, 16, 120),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const _PageHeading(
-                  eyebrow: 'PROFILE PREVIEW',
-                  title: 'Profile shell da san sang.',
-                  subtitle:
-                      'Collections da co danh sach de mo nhanh. Profile chi tiet va review history se tiep tuc mo rong o branch sau.',
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: CafeColors.surface,
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        profile?.displayName ?? 'Local Hunter',
-                        style: Theme.of(context).textTheme.headlineSmall,
+            children: [
+              const _PageHeading(
+                eyebrow: 'PROFILE',
+                title: 'Khong gian profile da day du hon.',
+                subtitle:
+                    'Nhan dien, thong tin tai khoan va tong quan hoat dong da duoc dua vao tab Profile. Chinh sua va dong bo du lieu se tach sang profile-backend.',
+              ),
+              const SizedBox(height: 20),
+              _ProfileHeroCard(
+                displayName: profile?.displayName ?? 'Local Hunter',
+                tagline: profile?.tagline ?? 'Coffee first, details later.',
+                level: profile?.level ?? 1,
+                points: profile?.points ?? 0,
+                avatarKey: profile?.avatarKey ?? 'local-avatar',
+              ),
+              const SizedBox(height: 18),
+              _ProfileSummaryRow(
+                savedCount: savedCafes.length,
+                collectionCount: cafeViewModel.collections.length,
+                reviewCount: cafeViewModel.reviewHistory.length,
+              ),
+              const SizedBox(height: 18),
+              _ProfileInfoCard(
+                email: profile?.email ?? 'supabase-user@local.dev',
+                phone: profile?.phone ?? 'No phone yet',
+                userId: profile?.userId ?? 'local-demo-user',
+              ),
+              const SizedBox(height: 18),
+              _SavedSpotlightCard(savedCafes: savedCafes),
+              const SizedBox(height: 18),
+              const _SectionLabel(
+                title: 'Collections',
+                subtitle: 'Tap hop quan theo muc dich de mo chi tiet nhanh',
+              ),
+              const SizedBox(height: 12),
+              if (cafeViewModel.collections.isEmpty)
+                const _EmptyState(
+                  title: 'Chua co collection nao',
+                  subtitle: 'Ban co the tao va quan ly collection o branch tiep theo.',
+                )
+              else
+                ...cafeViewModel.collections.map(
+                  (collection) {
+                    final cafesInCollection = collection.cafeIds
+                        .map(cafeViewModel.getCafeById)
+                        .whereType<Cafe>()
+                        .toList();
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _CollectionCard(
+                        collection: collection,
+                        cafes: cafesInCollection,
                       ),
-                      const SizedBox(height: 8),
-                      Text(profile?.email ?? 'supabase-user@local.dev'),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          _StatChip(
-                            label: 'Saved',
-                            value: '${cafeViewModel.favouriteCafes.length}',
-                          ),
-                          _StatChip(
-                            label: 'Collections',
-                            value: '${cafeViewModel.collections.length}',
-                          ),
-                          _StatChip(
-                            label: 'Reviews',
-                            value: '${cafeViewModel.reviewHistory.length}',
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      FilledButton(
-                        onPressed: onSignedOut,
-                        child: const Text('Dang xuat'),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-                const SizedBox(height: 18),
-                const _SectionLabel(
-                  title: 'Collections',
-                  subtitle: 'Tap hop quan theo muc dich de mo chi tiet nhanh',
-                ),
-                const SizedBox(height: 12),
-                if (cafeViewModel.collections.isEmpty)
-                  const _EmptyState(
-                    title: 'Chua co collection nao',
-                    subtitle: 'Ban co the tao va quan ly collection o branch tiep theo.',
-                  )
-                else
-                  ...cafeViewModel.collections.map(
-                    (collection) {
-                      final cafesInCollection = collection.cafeIds
-                          .map(cafeViewModel.getCafeById)
-                          .whereType<Cafe>()
-                          .toList();
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _CollectionCard(
-                          collection: collection,
-                          cafes: cafesInCollection,
-                        ),
-                      );
-                    },
-                  ),
-              ],
-            ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: onSignedOut,
+                child: const Text('Dang xuat'),
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+}
+
+class _ProfileHeroCard extends StatelessWidget {
+  const _ProfileHeroCard({
+    required this.displayName,
+    required this.tagline,
+    required this.level,
+    required this.points,
+    required this.avatarKey,
+  });
+
+  final String displayName;
+  final String tagline;
+  final int level;
+  final int points;
+  final String avatarKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF3B2A1E), Color(0xFF9B744B)],
+        ),
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 34,
+                backgroundColor: Colors.white.withValues(alpha: 0.18),
+                child: Text(
+                  _avatarLabel(avatarKey, displayName),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      tagline,
+                      style: const TextStyle(
+                        color: Color(0xFFF6EBDD),
+                        height: 1.35,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: _ProfileMetricBadge(
+                  label: 'Level',
+                  value: '$level',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _ProfileMetricBadge(
+                  label: 'Points',
+                  value: '$points',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _avatarLabel(String avatarKey, String displayName) {
+    final trimmed = displayName.trim();
+    if (trimmed.isNotEmpty) {
+      return trimmed.substring(0, 1).toUpperCase();
+    }
+    if (avatarKey.isNotEmpty) {
+      return avatarKey.substring(0, 1).toUpperCase();
+    }
+    return 'L';
+  }
+}
+
+class _ProfileSummaryRow extends StatelessWidget {
+  const _ProfileSummaryRow({
+    required this.savedCount,
+    required this.collectionCount,
+    required this.reviewCount,
+  });
+
+  final int savedCount;
+  final int collectionCount;
+  final int reviewCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        _StatChip(label: 'Saved', value: '$savedCount'),
+        _StatChip(label: 'Collections', value: '$collectionCount'),
+        _StatChip(label: 'Reviews', value: '$reviewCount'),
+      ],
+    );
+  }
+}
+
+class _ProfileInfoCard extends StatelessWidget {
+  const _ProfileInfoCard({
+    required this.email,
+    required this.phone,
+    required this.userId,
+  });
+
+  final String email;
+  final String phone;
+  final String userId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: CafeColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: CafeColors.dark.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Thong tin tai khoan',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 14),
+          _ProfileInfoRow(
+            icon: Icons.mail_outline_rounded,
+            label: 'Email',
+            value: email,
+          ),
+          const SizedBox(height: 10),
+          _ProfileInfoRow(
+            icon: Icons.phone_outlined,
+            label: 'Phone',
+            value: phone,
+          ),
+          const SizedBox(height: 10),
+          _ProfileInfoRow(
+            icon: Icons.badge_outlined,
+            label: 'User ID',
+            value: userId,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SavedSpotlightCard extends StatelessWidget {
+  const _SavedSpotlightCard({required this.savedCafes});
+
+  final List<Cafe> savedCafes;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: CafeColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: CafeColors.dark.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Saved spotlight',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            savedCafes.isEmpty
+                ? 'Chua co quan nao duoc luu trong profile nay.'
+                : 'Mot vai diem da luu de quay lai nhanh tu profile.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          if (savedCafes.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: savedCafes.take(3).map((cafe) {
+                return ActionChip(
+                  label: Text(cafe.name),
+                  onPressed: () => _openCafeDetailScreen(context, cafe.id),
+                );
+              }).toList(),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -764,6 +980,95 @@ class _CollectionCard extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _ProfileMetricBadge extends StatelessWidget {
+  const _ProfileMetricBadge({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFFF6EBDD),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileInfoRow extends StatelessWidget {
+  const _ProfileInfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: CafeColors.dark, size: 20),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  color: CafeColors.muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: CafeColors.dark,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
