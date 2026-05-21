@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../cafes/models/cafe.dart';
 import '../cafes/models/collection.dart';
+import '../cafes/models/review.dart';
 import '../cafes/viewmodels/cafe_viewmodel.dart';
 import '../screens/cafe_detail_screen.dart';
 import '../screens/map_screen.dart';
@@ -658,6 +659,16 @@ class _ProfilePreview extends StatelessWidget {
               _SavedSpotlightCard(savedCafes: savedCafes),
               const SizedBox(height: 18),
               const _SectionLabel(
+                title: 'History',
+                subtitle: 'Lich su review gan day de quay lai cac diem da ghe',
+              ),
+              const SizedBox(height: 12),
+              _HistoryCard(
+                reviews: cafeViewModel.reviewHistory,
+                resolveCafe: cafeViewModel.getCafeById,
+              ),
+              const SizedBox(height: 18),
+              const _SectionLabel(
                 title: 'Collections',
                 subtitle: 'Tap hop quan theo muc dich de mo chi tiet nhanh',
               ),
@@ -930,6 +941,52 @@ class _SavedSpotlightCard extends StatelessWidget {
   }
 }
 
+class _HistoryCard extends StatelessWidget {
+  const _HistoryCard({
+    required this.reviews,
+    required this.resolveCafe,
+  });
+
+  final List<Review> reviews;
+  final Cafe? Function(String cafeId) resolveCafe;
+
+  @override
+  Widget build(BuildContext context) {
+    if (reviews.isEmpty) {
+      return const _EmptyState(
+        title: 'Chua co lich su hoat dong',
+        subtitle: 'Review va cac moc quay lai se hien o day khi tai khoan bat dau su dung app.',
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: CafeColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: CafeColors.dark.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Column(
+        children: reviews.take(4).map((review) {
+          final cafe = resolveCafe(review.cafeId);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: _HistoryItem(
+              review: review,
+              cafeName: cafe?.name ?? 'Cafe da an',
+              onOpenCafe: cafe == null
+                  ? null
+                  : () => _openCafeDetailScreen(context, cafe.id),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
 class _CollectionCard extends StatelessWidget {
   const _CollectionCard({
     required this.collection,
@@ -981,6 +1038,91 @@ class _CollectionCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _HistoryItem extends StatelessWidget {
+  const _HistoryItem({
+    required this.review,
+    required this.cafeName,
+    required this.onOpenCafe,
+  });
+
+  final Review review;
+  final String cafeName;
+  final VoidCallback? onOpenCafe;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: CafeColors.background.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Icon(
+            Icons.history_rounded,
+            color: CafeColors.dark,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                cafeName,
+                style: const TextStyle(
+                  color: CafeColors.dark,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${review.rating.toStringAsFixed(1)} sao  •  ${_formatHistoryDate(review.createdAt)}',
+                style: const TextStyle(
+                  color: CafeColors.muted,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                review.comment,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: CafeColors.dark,
+                  height: 1.35,
+                ),
+              ),
+              if (onOpenCafe != null) ...[
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: onOpenCafe,
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 0),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text('Mo lai chi tiet quan'),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatHistoryDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year.toString();
+    return '$day/$month/$year';
   }
 }
 
