@@ -42,7 +42,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(viewModel.errorMessage ?? 'Dang nhap that bai')),
