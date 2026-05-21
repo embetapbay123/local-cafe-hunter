@@ -159,7 +159,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _handleSignOut() async {
     await context.read<AuthViewModel>().signOut();
     if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
   }
 }
 
