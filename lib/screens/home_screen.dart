@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../cafes/models/cafe.dart';
 import '../cafes/models/collection.dart';
 import '../cafes/models/review.dart';
+import '../cafes/models/user_profile.dart';
 import '../cafes/viewmodels/cafe_viewmodel.dart';
 import '../screens/cafe_detail_screen.dart';
 import '../screens/map_screen.dart';
@@ -656,6 +657,13 @@ class _ProfilePreview extends StatelessWidget {
                 email: profile?.email ?? 'supabase-user@local.dev',
                 phone: profile?.phone ?? 'No phone yet',
                 userId: profile?.userId ?? 'local-demo-user',
+                onEdit: profile == null
+                    ? null
+                    : () => _showProfileEditSheet(
+                          context,
+                          cafeViewModel,
+                          profile,
+                        ),
               ),
               const SizedBox(height: 18),
               _SavedSpotlightCard(savedCafes: savedCafes),
@@ -706,6 +714,118 @@ class _ProfilePreview extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _showProfileEditSheet(
+    BuildContext context,
+    CafeViewModel cafeViewModel,
+    UserProfile profile,
+  ) async {
+    final displayNameController = TextEditingController(
+      text: profile.displayName,
+    );
+    final taglineController = TextEditingController(text: profile.tagline);
+    final emailController = TextEditingController(text: profile.email);
+    final phoneController = TextEditingController(text: profile.phone);
+    final avatarController = TextEditingController(text: profile.avatarKey);
+    final formKey = GlobalKey<FormState>();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: CafeColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            18,
+            20,
+            MediaQuery.of(sheetContext).viewInsets.bottom + 24,
+          ),
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Cap nhat profile',
+                  style: Theme.of(sheetContext).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 14),
+                _SheetTextField(
+                  controller: displayNameController,
+                  label: 'Display name',
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Nhap ten hien thi';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                _SheetTextField(
+                  controller: taglineController,
+                  label: 'Tagline',
+                ),
+                const SizedBox(height: 12),
+                _SheetTextField(
+                  controller: emailController,
+                  label: 'Email',
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Nhap email';
+                    }
+                    if (!value.contains('@')) {
+                      return 'Email chua dung dinh dang';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                _SheetTextField(
+                  controller: phoneController,
+                  label: 'Phone',
+                ),
+                const SizedBox(height: 12),
+                _SheetTextField(
+                  controller: avatarController,
+                  label: 'Avatar key',
+                ),
+                const SizedBox(height: 18),
+                FilledButton(
+                  onPressed: () async {
+                    if (!formKey.currentState!.validate()) return;
+                    await cafeViewModel.updateUserProfile(
+                      profile.copyWith(
+                        displayName: displayNameController.text,
+                        tagline: taglineController.text,
+                        email: emailController.text,
+                        phone: phoneController.text,
+                        avatarKey: avatarController.text,
+                      ),
+                    );
+                    if (!sheetContext.mounted) return;
+                    Navigator.of(sheetContext).pop();
+                  },
+                  child: const Text('Luu profile'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    displayNameController.dispose();
+    taglineController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    avatarController.dispose();
   }
 }
 
@@ -846,11 +966,13 @@ class _ProfileInfoCard extends StatelessWidget {
     required this.email,
     required this.phone,
     required this.userId,
+    this.onEdit,
   });
 
   final String email;
   final String phone;
   final String userId;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -866,9 +988,21 @@ class _ProfileInfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Thong tin tai khoan',
-            style: Theme.of(context).textTheme.titleLarge,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Thong tin tai khoan',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              if (onEdit != null)
+                IconButton(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Cap nhat profile',
+                ),
+            ],
           ),
           const SizedBox(height: 14),
           _ProfileInfoRow(
@@ -889,6 +1023,38 @@ class _ProfileInfoCard extends StatelessWidget {
             value: userId,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SheetTextField extends StatelessWidget {
+  const _SheetTextField({
+    required this.controller,
+    required this.label,
+    this.keyboardType,
+    this.validator,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      validator: validator,
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: CafeColors.background.withValues(alpha: 0.55),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide.none,
+        ),
       ),
     );
   }

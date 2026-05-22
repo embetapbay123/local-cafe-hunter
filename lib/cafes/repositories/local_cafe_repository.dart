@@ -11,6 +11,7 @@ class LocalCafeRepository implements CafeRepository {
   List<CafeCollection> _collections = List<CafeCollection>.from(
     LocalCafeSeed.collections,
   );
+  UserProfile _userProfile = LocalCafeSeed.userProfile;
 
   @override
   Future<void> addReview(
@@ -55,7 +56,7 @@ class LocalCafeRepository implements CafeRepository {
   }
 
   @override
-  Future<UserProfile> getUserProfile() async => LocalCafeSeed.userProfile;
+  Future<UserProfile> getUserProfile() async => _userProfile;
 
   @override
   Future<List<Review>> getReviewHistory() async {
@@ -136,7 +137,37 @@ class LocalCafeRepository implements CafeRepository {
   }
 
   @override
-  Future<void> updateUserProfile(UserProfile profile) async {}
+  Future<void> updateUserProfile(UserProfile profile) async {
+    final normalizedProfile = profile.copyWith(
+      displayName: profile.displayName.trim(),
+      tagline: profile.tagline.trim(),
+      email: profile.email.trim(),
+      phone: profile.phone.trim(),
+      avatarKey: profile.avatarKey.trim(),
+    );
+
+    _userProfile = normalizedProfile;
+    _cafes = _cafes.map((cafe) {
+      final updatedReviews = cafe.reviews.map((review) {
+        if (review.userId != normalizedProfile.userId) {
+          return review;
+        }
+        return Review(
+          id: review.id,
+          cafeId: review.cafeId,
+          userId: review.userId,
+          authorName: normalizedProfile.displayName,
+          rating: review.rating,
+          comment: review.comment,
+          createdAt: review.createdAt,
+          imageKey: review.imageKey,
+          imageUrl: review.imageUrl,
+        );
+      }).toList();
+
+      return cafe.copyWith(reviews: updatedReviews);
+    }).toList();
+  }
 
   @override
   Future<void> createCollection(String name, List<String> cafeIds) async {
