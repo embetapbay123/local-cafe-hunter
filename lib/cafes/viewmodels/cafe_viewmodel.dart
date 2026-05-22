@@ -185,6 +185,15 @@ class CafeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateUserProfile(UserProfile profile) async {
+    await _repository.updateUserProfile(profile);
+    _userProfile = await _repository.getUserProfile();
+    _cafes = await _repository.getCafes();
+    _reviewHistory = await _repository.getReviewHistory();
+    await _loadNearbyCafes(notify: false);
+    notifyListeners();
+  }
+
   void _initializeMapCenter() {
     if (_cafes.isEmpty) {
       _mapCenterLatitude = null;
