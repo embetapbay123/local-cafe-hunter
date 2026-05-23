@@ -175,9 +175,48 @@ class LocalCafeRepository implements CafeRepository {
       ..._collections,
       CafeCollection(
         id: 'local-${DateTime.now().microsecondsSinceEpoch}',
-        name: name,
-        cafeIds: cafeIds,
+        name: name.trim(),
+        cafeIds: List<String>.from(cafeIds.toSet()),
       ),
     ];
+  }
+
+  @override
+  Future<void> renameCollection(String collectionId, String name) async {
+    _collections = _collections.map((collection) {
+      if (collection.id != collectionId) return collection;
+      return collection.copyWith(name: name.trim());
+    }).toList();
+  }
+
+  @override
+  Future<void> deleteCollection(String collectionId) async {
+    _collections = _collections
+        .where((collection) => collection.id != collectionId)
+        .toList();
+  }
+
+  @override
+  Future<void> addCafeToCollection(String collectionId, String cafeId) async {
+    _collections = _collections.map((collection) {
+      if (collection.id != collectionId) return collection;
+      if (collection.cafeIds.contains(cafeId)) return collection;
+      return collection.copyWith(
+        cafeIds: [...collection.cafeIds, cafeId],
+      );
+    }).toList();
+  }
+
+  @override
+  Future<void> removeCafeFromCollection(
+    String collectionId,
+    String cafeId,
+  ) async {
+    _collections = _collections.map((collection) {
+      if (collection.id != collectionId) return collection;
+      return collection.copyWith(
+        cafeIds: collection.cafeIds.where((id) => id != cafeId).toList(),
+      );
+    }).toList();
   }
 }
