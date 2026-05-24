@@ -20,4 +20,28 @@ class Review {
   final DateTime createdAt;
   final String? imageKey;
   final String? imageUrl;
+
+  Review copyWith({
+    String? id,
+    String? cafeId,
+    String? userId,
+    String? authorName,
+    double? rating,
+    String? comment,
+    DateTime? createdAt,
+    String? imageKey,
+    String? imageUrl,
+  }) {
+    return Review(
+      id: id ?? this.id,
+      cafeId: cafeId ?? this.cafeId,
+      userId: userId ?? this.userId,
+      authorName: authorName ?? this.authorName,
+      rating: rating ?? this.rating,
+      comment: comment ?? this.comment,
+      createdAt: createdAt ?? this.createdAt,
+      imageKey: imageKey ?? this.imageKey,
+      imageUrl: imageUrl ?? this.imageUrl,
+    );
+  }
 }

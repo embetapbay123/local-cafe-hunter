@@ -21,6 +21,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
   late final TextEditingController _commentController;
   double _draftRating = 4;
   bool _isSubmitting = false;
+  Review? _editingReview;
 
   @override
   void initState() {
@@ -50,6 +51,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
         }
 
         final reviews = cafe.reviews;
+        final currentUserId = cafeViewModel.userProfile?.userId;
 
         return Scaffold(
           backgroundColor: CafeColors.background,
@@ -123,9 +125,19 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         rating: _draftRating,
                         controller: _commentController,
                         isSubmitting: _isSubmitting,
+                        isEditing: _editingReview != null,
                         onRatingChanged: (value) {
                           setState(() => _draftRating = value);
                         },
+                        onCancelEdit: _editingReview == null
+                            ? null
+                            : () {
+                                setState(() {
+                                  _editingReview = null;
+                                  _draftRating = 4;
+                                  _commentController.clear();
+                                });
+                              },
                         onSubmit: () => _submitReview(context, cafeViewModel),
                       ),
                       const SizedBox(height: 16),
@@ -137,7 +149,26 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       ...reviews.map(
                         (review) => Padding(
                           padding: const EdgeInsets.only(bottom: 14),
-                          child: _ReviewCard(review: review),
+                          child: _ReviewCard(
+                            review: review,
+                            canManage: review.userId == currentUserId,
+                            onEdit: review.userId != currentUserId
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _editingReview = review;
+                                      _draftRating = review.rating;
+                                      _commentController.text = review.comment;
+                                    });
+                                  },
+                            onDelete: review.userId != currentUserId
+                                ? null
+                                : () => _deleteReview(
+                                      context,
+                                      cafeViewModel,
+                                      review,
+                                    ),
+                          ),
                         ),
                       ),
                     ],
@@ -160,22 +191,61 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
     setState(() => _isSubmitting = true);
     try {
-      await cafeViewModel.addReview(
-        cafeId: widget.cafeId,
-        rating: _draftRating,
-        comment: comment,
-      );
+      final editingReview = _editingReview;
+      if (editingReview == null) {
+        await cafeViewModel.addReview(
+          cafeId: widget.cafeId,
+          rating: _draftRating,
+          comment: comment,
+        );
+      } else {
+        await cafeViewModel.updateReview(
+          cafeId: widget.cafeId,
+          review: editingReview,
+          rating: _draftRating,
+          comment: comment,
+        );
+      }
       if (!mounted) return;
       _commentController.clear();
-      setState(() => _draftRating = 4);
+      setState(() {
+        _draftRating = 4;
+        _editingReview = null;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Da gui review moi.')),
+        SnackBar(
+          content: Text(
+            editingReview == null ? 'Da gui review moi.' : 'Da cap nhat review.',
+          ),
+        ),
       );
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
       }
     }
+  }
+
+  Future<void> _deleteReview(
+    BuildContext context,
+    CafeViewModel cafeViewModel,
+    Review review,
+  ) async {
+    await cafeViewModel.deleteReview(
+      cafeId: widget.cafeId,
+      reviewId: review.id,
+    );
+    if (!mounted) return;
+    if (_editingReview?.id == review.id) {
+      setState(() {
+        _editingReview = null;
+        _draftRating = 4;
+        _commentController.clear();
+      });
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Da xoa review.')),
+    );
   }
 }
 
@@ -184,14 +254,18 @@ class _ReviewComposerCard extends StatelessWidget {
     required this.rating,
     required this.controller,
     required this.isSubmitting,
+    required this.isEditing,
     required this.onRatingChanged,
+    this.onCancelEdit,
     required this.onSubmit,
   });
 
   final double rating;
   final TextEditingController controller;
   final bool isSubmitting;
+  final bool isEditing;
   final ValueChanged<double> onRatingChanged;
+  final VoidCallback? onCancelEdit;
   final VoidCallback onSubmit;
 
   @override
@@ -205,10 +279,15 @@ class _ReviewComposerCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Viet review nhanh', style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            isEditing ? 'Chinh sua review' : 'Viet review nhanh',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           const SizedBox(height: 10),
           Text(
-            'Review-management se xu ly edit/delete sau. Branch nay tap trung vao feed va submit.',
+            isEditing
+                ? 'Ban dang chinh sua review cua chinh minh.'
+                : 'Review-management se xu ly edit/delete cho review cua chinh ban ngay trong man nay.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 14),
@@ -239,9 +318,26 @@ class _ReviewComposerCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          FilledButton(
-            onPressed: isSubmitting ? null : onSubmit,
-            child: Text(isSubmitting ? 'Dang gui...' : 'Gui review'),
+          Row(
+            children: [
+              if (isEditing && onCancelEdit != null) ...[
+                OutlinedButton(
+                  onPressed: isSubmitting ? null : onCancelEdit,
+                  child: const Text('Huy'),
+                ),
+                const SizedBox(width: 10),
+              ],
+              FilledButton(
+                onPressed: isSubmitting ? null : onSubmit,
+                child: Text(
+                  isSubmitting
+                      ? 'Dang xu ly...'
+                      : isEditing
+                          ? 'Luu review'
+                          : 'Gui review',
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -290,9 +386,17 @@ class _ReviewSummaryCard extends StatelessWidget {
 }
 
 class _ReviewCard extends StatelessWidget {
-  const _ReviewCard({required this.review});
+  const _ReviewCard({
+    required this.review,
+    required this.canManage,
+    this.onEdit,
+    this.onDelete,
+  });
 
   final Review review;
+  final bool canManage;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -313,6 +417,26 @@ class _ReviewCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
+              if (canManage)
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      onEdit?.call();
+                    } else if (value == 'delete') {
+                      onDelete?.call();
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem<String>(
+                      value: 'edit',
+                      child: Text('Chinh sua'),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Text('Xoa'),
+                    ),
+                  ],
+                ),
               Text(
                 review.rating.toStringAsFixed(1),
                 style: const TextStyle(
