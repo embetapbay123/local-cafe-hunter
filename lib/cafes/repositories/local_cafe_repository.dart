@@ -22,15 +22,30 @@ class LocalCafeRepository implements CafeRepository {
     _cafes = _cafes.map((cafe) {
       if (cafe.id != cafeId) return cafe;
       final updatedReviews = [review, ...cafe.reviews];
-      final average = updatedReviews
-              .map((item) => item.rating)
-              .reduce((left, right) => left + right) /
-          updatedReviews.length;
-      return cafe.copyWith(
-        reviews: updatedReviews,
-        reviewCount: updatedReviews.length,
-        rating: double.parse(average.toStringAsFixed(1)),
-      );
+      return _copyCafeWithUpdatedReviews(cafe, updatedReviews);
+    }).toList();
+  }
+
+  @override
+  Future<void> updateReview(String cafeId, Review review) async {
+    _cafes = _cafes.map((cafe) {
+      if (cafe.id != cafeId) return cafe;
+      final updatedReviews = cafe.reviews.map((item) {
+        if (item.id != review.id) return item;
+        return review;
+      }).toList();
+      return _copyCafeWithUpdatedReviews(cafe, updatedReviews);
+    }).toList();
+  }
+
+  @override
+  Future<void> deleteReview(String cafeId, String reviewId) async {
+    _cafes = _cafes.map((cafe) {
+      if (cafe.id != cafeId) return cafe;
+      final updatedReviews = cafe.reviews
+          .where((item) => item.id != reviewId)
+          .toList();
+      return _copyCafeWithUpdatedReviews(cafe, updatedReviews);
     }).toList();
   }
 
@@ -218,5 +233,19 @@ class LocalCafeRepository implements CafeRepository {
         cafeIds: collection.cafeIds.where((id) => id != cafeId).toList(),
       );
     }).toList();
+  }
+
+  Cafe _copyCafeWithUpdatedReviews(Cafe cafe, List<Review> reviews) {
+    final average = reviews.isEmpty
+        ? 0.0
+        : reviews.map((item) => item.rating).reduce((left, right) => left + right) /
+            reviews.length;
+    return cafe.copyWith(
+      reviews: reviews,
+      reviewCount: reviews.length,
+      rating: reviews.isEmpty
+          ? cafe.rating
+          : double.parse(average.toStringAsFixed(1)),
+    );
   }
 }
