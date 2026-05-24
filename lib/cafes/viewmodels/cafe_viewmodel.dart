@@ -185,6 +185,36 @@ class CafeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateReview({
+    required String cafeId,
+    required Review review,
+    required double rating,
+    required String comment,
+  }) async {
+    await _repository.updateReview(
+      cafeId,
+      review.copyWith(
+        rating: rating,
+        comment: comment.trim(),
+      ),
+    );
+    _cafes = await _repository.getCafes();
+    _reviewHistory = await _repository.getReviewHistory();
+    await _loadNearbyCafes(notify: false);
+    notifyListeners();
+  }
+
+  Future<void> deleteReview({
+    required String cafeId,
+    required String reviewId,
+  }) async {
+    await _repository.deleteReview(cafeId, reviewId);
+    _cafes = await _repository.getCafes();
+    _reviewHistory = await _repository.getReviewHistory();
+    await _loadNearbyCafes(notify: false);
+    notifyListeners();
+  }
+
   Future<void> updateUserProfile(UserProfile profile) async {
     await _repository.updateUserProfile(profile);
     _userProfile = await _repository.getUserProfile();
