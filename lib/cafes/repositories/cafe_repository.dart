@@ -28,5 +28,9 @@ abstract class CafeRepository {
     String? imagePath,
   });
   Future<void> createCollection(String name, List<String> cafeIds);
+  Future<void> renameCollection(String collectionId, String name);
+  Future<void> deleteCollection(String collectionId);
+  Future<void> addCafeToCollection(String collectionId, String cafeId);
+  Future<void> removeCafeFromCollection(String collectionId, String cafeId);
   Future<void> updateUserProfile(UserProfile profile);
 }

@@ -678,9 +678,11 @@ class _ProfilePreview extends StatelessWidget {
                 resolveCafe: cafeViewModel.getCafeById,
               ),
               const SizedBox(height: 18),
-              const _SectionLabel(
-                title: 'Collections',
-                subtitle: 'Tap hop quan theo muc dich de mo chi tiet nhanh',
+              _CollectionSectionHeader(
+                onCreateCollection: () => _showCreateCollectionSheet(
+                  context,
+                  cafeViewModel,
+                ),
               ),
               const SizedBox(height: 12),
               if (cafeViewModel.collections.isEmpty)
@@ -700,6 +702,24 @@ class _ProfilePreview extends StatelessWidget {
                       child: _CollectionCard(
                         collection: collection,
                         cafes: cafesInCollection,
+                        allSavedCafes: savedCafes,
+                        onRename: () => _showRenameCollectionSheet(
+                          context,
+                          cafeViewModel,
+                          collection,
+                        ),
+                        onDelete: () => cafeViewModel.deleteCollection(
+                          collection.id,
+                        ),
+                        onToggleCafe: (cafeId, isSelected) => isSelected
+                            ? cafeViewModel.removeCafeFromCollection(
+                                collection.id,
+                                cafeId,
+                              )
+                            : cafeViewModel.addCafeToCollection(
+                                collection.id,
+                                cafeId,
+                              ),
                       ),
                     );
                   },
@@ -826,6 +846,139 @@ class _ProfilePreview extends StatelessWidget {
     emailController.dispose();
     phoneController.dispose();
     avatarController.dispose();
+  }
+
+  Future<void> _showCreateCollectionSheet(
+    BuildContext context,
+    CafeViewModel cafeViewModel,
+  ) async {
+    final nameController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: CafeColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            18,
+            20,
+            MediaQuery.of(sheetContext).viewInsets.bottom + 24,
+          ),
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Tao collection',
+                  style: Theme.of(sheetContext).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 14),
+                _SheetTextField(
+                  controller: nameController,
+                  label: 'Ten collection',
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Nhap ten collection';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 18),
+                FilledButton(
+                  onPressed: () async {
+                    if (!formKey.currentState!.validate()) return;
+                    await cafeViewModel.createCollection(
+                      nameController.text,
+                      const [],
+                    );
+                    if (!sheetContext.mounted) return;
+                    Navigator.of(sheetContext).pop();
+                  },
+                  child: const Text('Tao moi'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    nameController.dispose();
+  }
+
+  Future<void> _showRenameCollectionSheet(
+    BuildContext context,
+    CafeViewModel cafeViewModel,
+    CafeCollection collection,
+  ) async {
+    final nameController = TextEditingController(text: collection.name);
+    final formKey = GlobalKey<FormState>();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: CafeColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            18,
+            20,
+            MediaQuery.of(sheetContext).viewInsets.bottom + 24,
+          ),
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Doi ten collection',
+                  style: Theme.of(sheetContext).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 14),
+                _SheetTextField(
+                  controller: nameController,
+                  label: 'Ten collection',
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Nhap ten collection';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 18),
+                FilledButton(
+                  onPressed: () async {
+                    if (!formKey.currentState!.validate()) return;
+                    await cafeViewModel.renameCollection(
+                      collection.id,
+                      nameController.text,
+                    );
+                    if (!sheetContext.mounted) return;
+                    Navigator.of(sheetContext).pop();
+                  },
+                  child: const Text('Luu ten moi'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    nameController.dispose();
   }
 }
 
@@ -1159,10 +1312,18 @@ class _CollectionCard extends StatelessWidget {
   const _CollectionCard({
     required this.collection,
     required this.cafes,
+    required this.allSavedCafes,
+    required this.onRename,
+    required this.onDelete,
+    required this.onToggleCafe,
   });
 
   final CafeCollection collection;
   final List<Cafe> cafes;
+  final List<Cafe> allSavedCafes;
+  final VoidCallback onRename;
+  final VoidCallback onDelete;
+  final Future<void> Function(String cafeId, bool isSelected) onToggleCafe;
 
   @override
   Widget build(BuildContext context) {
@@ -1178,11 +1339,36 @@ class _CollectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            collection.name,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  collection.name,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
                 ),
+              ),
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'rename') {
+                    onRename();
+                  } else if (value == 'delete') {
+                    onDelete();
+                  }
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem<String>(
+                    value: 'rename',
+                    child: Text('Doi ten'),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'delete',
+                    child: Text('Xoa collection'),
+                  ),
+                ],
+              ),
+            ],
           ),
           const SizedBox(height: 4),
           Text(
@@ -1203,8 +1389,55 @@ class _CollectionCard extends StatelessWidget {
                 );
               }).toList(),
             ),
+          if (allSavedCafes.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text(
+              'Quan ly quan trong collection',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: allSavedCafes.map((cafe) {
+                final isSelected = collection.cafeIds.contains(cafe.id);
+                return FilterChip(
+                  selected: isSelected,
+                  label: Text(cafe.name),
+                  onSelected: (_) => onToggleCafe(cafe.id, isSelected),
+                );
+              }).toList(),
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+class _CollectionSectionHeader extends StatelessWidget {
+  const _CollectionSectionHeader({
+    required this.onCreateCollection,
+  });
+
+  final VoidCallback onCreateCollection;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: const _SectionLabel(
+            title: 'Collections',
+            subtitle: 'Tap hop quan theo muc dich de mo chi tiet nhanh',
+          ),
+        ),
+        IconButton(
+          onPressed: onCreateCollection,
+          icon: const Icon(Icons.add_circle_outline_rounded),
+          tooltip: 'Tao collection',
+        ),
+      ],
     );
   }
 }
