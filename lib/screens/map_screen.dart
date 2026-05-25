@@ -50,6 +50,20 @@ class MapScreen extends StatelessWidget {
                               'Mo phong luong kham pha cafe theo vi tri.',
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                _CompactChip(
+                                  label:
+                                      'Ban kinh ${(cafeViewModel.mapRadiusMeters / 1000).toStringAsFixed(1)} km',
+                                ),
+                                _CompactChip(
+                                  label: _sortLabel(cafeViewModel.sortMode),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -176,6 +190,19 @@ class MapScreen extends StatelessWidget {
         builder: (_) => CafeDetailScreen(cafeId: cafeId),
       ),
     );
+  }
+
+  String _sortLabel(CafeSortMode mode) {
+    switch (mode) {
+      case CafeSortMode.relevance:
+        return 'Mac dinh';
+      case CafeSortMode.ratingHigh:
+        return 'Rating cao';
+      case CafeSortMode.distanceNear:
+        return 'Gan nhat';
+      case CafeSortMode.priceLow:
+        return 'Gia thap';
+    }
   }
 }
 

@@ -8,6 +8,10 @@ import '../models/review.dart';
 import '../models/user_profile.dart';
 import '../repositories/cafe_repository.dart';
 
+enum CafeSortMode { relevance, ratingHigh, distanceNear, priceLow }
+
+enum CafePriceFilter { any, budget, moderate, premium }
+
 class CafeViewModel extends ChangeNotifier {
   CafeViewModel(this._repository);
 
@@ -19,6 +23,8 @@ class CafeViewModel extends ChangeNotifier {
   int _selectedTabIndex = 0;
   String _searchQuery = '';
   String? _selectedFilter;
+  CafeSortMode _sortMode = CafeSortMode.relevance;
+  CafePriceFilter _priceFilter = CafePriceFilter.any;
   String? _errorMessage;
   String? _mapErrorMessage;
   List<Cafe> _cafes = const [];
@@ -35,6 +41,8 @@ class CafeViewModel extends ChangeNotifier {
   int get selectedTabIndex => _selectedTabIndex;
   String get searchQuery => _searchQuery;
   String? get selectedFilter => _selectedFilter;
+  CafeSortMode get sortMode => _sortMode;
+  CafePriceFilter get priceFilter => _priceFilter;
   String? get errorMessage => _errorMessage;
   String? get mapErrorMessage => _mapErrorMessage;
   double? get mapCenterLatitude => _mapCenterLatitude;
@@ -55,11 +63,16 @@ class CafeViewModel extends ChangeNotifier {
     return filters.toList()..sort();
   }
 
-  bool get hasActiveSearch => _searchQuery.isNotEmpty || _selectedFilter != null;
+  bool get hasActiveSearch =>
+      _searchQuery.isNotEmpty ||
+      _selectedFilter != null ||
+      _sortMode != CafeSortMode.relevance ||
+      _priceFilter != CafePriceFilter.any ||
+      _mapRadiusMeters != _defaultMapRadiusMeters;
 
   List<Cafe> get visibleCafes {
     final filter = _selectedFilter;
-    return _cafes.where((cafe) {
+    final filtered = _cafes.where((cafe) {
       final query = _searchQuery;
       final queryMatches = query.isEmpty ||
           cafe.name.toLowerCase().contains(query) ||
@@ -68,6 +81,7 @@ class CafeViewModel extends ChangeNotifier {
           filter == null || cafe.amenities.any((item) => item == filter);
       return queryMatches && filterMatches;
     }).toList();
+    return _applyAdvancedFiltersAndSort(filtered);
   }
 
   List<Cafe> get favouriteCafes =>
@@ -134,10 +148,33 @@ class CafeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setSortMode(CafeSortMode mode) {
+    if (_sortMode == mode) return;
+    _sortMode = mode;
+    unawaited(_loadNearbyCafes());
+    notifyListeners();
+  }
+
+  void setPriceFilter(CafePriceFilter filter) {
+    if (_priceFilter == filter) return;
+    _priceFilter = filter;
+    unawaited(_loadNearbyCafes());
+    notifyListeners();
+  }
+
   void clearSearch() {
-    if (_searchQuery.isEmpty && _selectedFilter == null) return;
+    if (_searchQuery.isEmpty &&
+        _selectedFilter == null &&
+        _sortMode == CafeSortMode.relevance &&
+        _priceFilter == CafePriceFilter.any &&
+        _mapRadiusMeters == _defaultMapRadiusMeters) {
+      return;
+    }
     _searchQuery = '';
     _selectedFilter = null;
+    _sortMode = CafeSortMode.relevance;
+    _priceFilter = CafePriceFilter.any;
+    _mapRadiusMeters = _defaultMapRadiusMeters;
     unawaited(_loadNearbyCafes());
     notifyListeners();
   }
@@ -290,18 +327,69 @@ class CafeViewModel extends ChangeNotifier {
     if (notify) notifyListeners();
 
     try {
-      _nearbyCafes = await _repository.getNearbyCafes(
+      final nearby = await _repository.getNearbyCafes(
         latitude: latitude,
         longitude: longitude,
         radiusMeters: _mapRadiusMeters,
         query: _searchQuery,
         filters: _selectedFilter == null ? const [] : [_selectedFilter!],
       );
+      _nearbyCafes = _applyAdvancedFiltersAndSort(nearby);
     } catch (error) {
       _mapErrorMessage = error.toString();
     } finally {
       _isMapLoading = false;
       if (notify) notifyListeners();
     }
+  }
+
+  List<Cafe> _applyAdvancedFiltersAndSort(List<Cafe> cafes) {
+    final filtered = cafes.where(_matchesPriceFilter).toList();
+    switch (_sortMode) {
+      case CafeSortMode.relevance:
+        return filtered;
+      case CafeSortMode.ratingHigh:
+        filtered.sort((left, right) => right.rating.compareTo(left.rating));
+        return filtered;
+      case CafeSortMode.distanceNear:
+        filtered.sort((left, right) {
+          final leftDistance = left.distanceMeters ?? double.infinity;
+          final rightDistance = right.distanceMeters ?? double.infinity;
+          return leftDistance.compareTo(rightDistance);
+        });
+        return filtered;
+      case CafeSortMode.priceLow:
+        filtered.sort((left, right) {
+          return _maxPriceValue(left.priceRange).compareTo(
+            _maxPriceValue(right.priceRange),
+          );
+        });
+        return filtered;
+    }
+  }
+
+  bool _matchesPriceFilter(Cafe cafe) {
+    final maxPrice = _maxPriceValue(cafe.priceRange);
+    switch (_priceFilter) {
+      case CafePriceFilter.any:
+        return true;
+      case CafePriceFilter.budget:
+        return maxPrice <= 40000;
+      case CafePriceFilter.moderate:
+        return maxPrice > 40000 && maxPrice <= 55000;
+      case CafePriceFilter.premium:
+        return maxPrice > 55000;
+    }
+  }
+
+  int _maxPriceValue(String priceRange) {
+    final compact = priceRange.replaceAll(' ', '').toLowerCase();
+    final parts = compact.split('-');
+    final last = parts.isEmpty ? compact : parts.last;
+    final digits = last.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) {
+      return 0;
+    }
+    return int.parse(digits) * 1000;
   }
 }
