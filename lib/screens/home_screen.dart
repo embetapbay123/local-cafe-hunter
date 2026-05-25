@@ -327,6 +327,7 @@ class _SearchPage extends StatelessWidget {
       builder: (context, cafeViewModel, _) {
         final cafes = cafeViewModel.visibleCafes;
         final activeFilter = cafeViewModel.selectedFilter;
+        final radiusKm = (cafeViewModel.mapRadiusMeters / 1000).toStringAsFixed(1);
 
         return SafeArea(
           bottom: false,
@@ -373,10 +374,15 @@ class _SearchPage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 18),
+              _AdvancedSearchCard(cafeViewModel: cafeViewModel),
+              const SizedBox(height: 18),
               _SearchSummaryCard(
                 resultCount: cafes.length,
                 query: cafeViewModel.searchQuery,
                 filter: activeFilter,
+                sortMode: cafeViewModel.sortMode,
+                priceFilter: cafeViewModel.priceFilter,
+                radiusLabel: '$radiusKm km',
               ),
               const SizedBox(height: 16),
               _MapLaunchCard(
@@ -504,16 +510,26 @@ class _SearchSummaryCard extends StatelessWidget {
     required this.resultCount,
     required this.query,
     required this.filter,
+    required this.sortMode,
+    required this.priceFilter,
+    required this.radiusLabel,
   });
 
   final int resultCount;
   final String query;
   final String? filter;
+  final CafeSortMode sortMode;
+  final CafePriceFilter priceFilter;
+  final String radiusLabel;
 
   @override
   Widget build(BuildContext context) {
     final hasQuery = query.isNotEmpty;
     final hasFilter = filter != null;
+    final hasAdvanced =
+        sortMode != CafeSortMode.relevance ||
+        priceFilter != CafePriceFilter.any ||
+        radiusLabel != '2.5 km';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -538,8 +554,179 @@ class _SearchSummaryCard extends StatelessWidget {
                 : 'Chua co bo loc nao duoc ap dung. Day la luong search co ban cua app.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.4),
           ),
+          if (hasAdvanced) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _InlineChip(label: _sortModeLabel(sortMode)),
+                _InlineChip(label: _priceFilterLabel(priceFilter)),
+                _InlineChip(label: 'Ban kinh $radiusLabel'),
+              ],
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  String _sortModeLabel(CafeSortMode mode) {
+    switch (mode) {
+      case CafeSortMode.relevance:
+        return 'Mac dinh';
+      case CafeSortMode.ratingHigh:
+        return 'Rating cao';
+      case CafeSortMode.distanceNear:
+        return 'Gan nhat';
+      case CafeSortMode.priceLow:
+        return 'Gia thap';
+    }
+  }
+
+  String _priceFilterLabel(CafePriceFilter filter) {
+    switch (filter) {
+      case CafePriceFilter.any:
+        return 'Moi muc gia';
+      case CafePriceFilter.budget:
+        return '<= 40k';
+      case CafePriceFilter.moderate:
+        return '40k - 55k';
+      case CafePriceFilter.premium:
+        return '> 55k';
+    }
+  }
+}
+
+class _AdvancedSearchCard extends StatelessWidget {
+  const _AdvancedSearchCard({required this.cafeViewModel});
+
+  final CafeViewModel cafeViewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: CafeColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: CafeColors.dark.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Bo loc nang cao',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Sap xep',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: CafeSortMode.values.map((mode) {
+              return ChoiceChip(
+                selected: cafeViewModel.sortMode == mode,
+                label: Text(_sortLabel(mode)),
+                onSelected: (_) => cafeViewModel.setSortMode(mode),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Muc gia',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: CafePriceFilter.values.map((filter) {
+              return ChoiceChip(
+                selected: cafeViewModel.priceFilter == filter,
+                label: Text(_priceLabel(filter)),
+                onSelected: (_) => cafeViewModel.setPriceFilter(filter),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Ban kinh map',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: const [1000.0, 2500.0, 5000.0].map((radius) {
+              return _RadiusChip(radiusMeters: radius);
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _sortLabel(CafeSortMode mode) {
+    switch (mode) {
+      case CafeSortMode.relevance:
+        return 'Mac dinh';
+      case CafeSortMode.ratingHigh:
+        return 'Rating cao';
+      case CafeSortMode.distanceNear:
+        return 'Gan nhat';
+      case CafeSortMode.priceLow:
+        return 'Gia thap';
+    }
+  }
+
+  String _priceLabel(CafePriceFilter filter) {
+    switch (filter) {
+      case CafePriceFilter.any:
+        return 'Tat ca';
+      case CafePriceFilter.budget:
+        return '<= 40k';
+      case CafePriceFilter.moderate:
+        return '40k - 55k';
+      case CafePriceFilter.premium:
+        return '> 55k';
+    }
+  }
+}
+
+class _RadiusChip extends StatelessWidget {
+  const _RadiusChip({required this.radiusMeters});
+
+  final double radiusMeters;
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<CafeViewModel>(
+      builder: (context, cafeViewModel, _) {
+        final selected = cafeViewModel.mapRadiusMeters == radiusMeters;
+        return ChoiceChip(
+          selected: selected,
+          label: Text('${(radiusMeters / 1000).toStringAsFixed(radiusMeters < 2000 ? 1 : 1)} km'),
+          onSelected: (_) {
+            final latitude = cafeViewModel.mapCenterLatitude;
+            final longitude = cafeViewModel.mapCenterLongitude;
+            if (latitude == null || longitude == null) {
+              return;
+            }
+            cafeViewModel.setMapFocus(
+              latitude: latitude,
+              longitude: longitude,
+              radiusMeters: radiusMeters,
+            );
+          },
+        );
+      },
     );
   }
 }
