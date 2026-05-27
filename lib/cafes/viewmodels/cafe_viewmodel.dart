@@ -7,6 +7,7 @@ import '../models/collection.dart';
 import '../models/review.dart';
 import '../models/user_profile.dart';
 import '../repositories/cafe_repository.dart';
+import '../../services/settings_service.dart';
 
 enum CafeSortMode { relevance, ratingHigh, distanceNear, priceLow }
 
@@ -27,6 +28,8 @@ class CafeViewModel extends ChangeNotifier {
   CafePriceFilter _priceFilter = CafePriceFilter.any;
   String? _errorMessage;
   String? _mapErrorMessage;
+  bool _compactCafeCards = false;
+  bool _showMapHints = true;
   List<Cafe> _cafes = const [];
   List<Cafe> _nearbyCafes = const [];
   List<CafeCollection> _collections = const [];
@@ -45,6 +48,8 @@ class CafeViewModel extends ChangeNotifier {
   CafePriceFilter get priceFilter => _priceFilter;
   String? get errorMessage => _errorMessage;
   String? get mapErrorMessage => _mapErrorMessage;
+  bool get compactCafeCards => _compactCafeCards;
+  bool get showMapHints => _showMapHints;
   double? get mapCenterLatitude => _mapCenterLatitude;
   double? get mapCenterLongitude => _mapCenterLongitude;
   double get mapRadiusMeters => _mapRadiusMeters;
@@ -109,6 +114,7 @@ class CafeViewModel extends ChangeNotifier {
       _collections = await _repository.getCollections();
       _reviewHistory = await _repository.getReviewHistory();
       _userProfile = await _repository.getUserProfile();
+      await _loadSettings();
       _initializeMapCenter();
       await _loadNearbyCafes(notify: false);
     } catch (error) {
@@ -130,6 +136,27 @@ class CafeViewModel extends ChangeNotifier {
   void setSelectedTabIndex(int index) {
     if (_selectedTabIndex == index) return;
     _selectedTabIndex = index;
+    notifyListeners();
+  }
+
+  Future<void> setCompactCafeCards(bool value) async {
+    if (_compactCafeCards == value) return;
+    _compactCafeCards = value;
+    await SettingsService().setCompactCafeCards(value);
+    notifyListeners();
+  }
+
+  Future<void> setShowMapHints(bool value) async {
+    if (_showMapHints == value) return;
+    _showMapHints = value;
+    await SettingsService().setShowMapHints(value);
+    notifyListeners();
+  }
+
+  Future<void> resetSettings() async {
+    await SettingsService().reset();
+    _compactCafeCards = false;
+    _showMapHints = true;
     notifyListeners();
   }
 
@@ -310,6 +337,12 @@ class CafeViewModel extends ChangeNotifier {
 
     _mapCenterLatitude = latitudeAverage;
     _mapCenterLongitude = longitudeAverage;
+  }
+
+  Future<void> _loadSettings() async {
+    final service = SettingsService();
+    _compactCafeCards = await service.getCompactCafeCards();
+    _showMapHints = await service.getShowMapHints();
   }
 
   Future<void> _loadNearbyCafes({bool notify = true}) async {
