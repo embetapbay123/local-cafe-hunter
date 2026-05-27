@@ -16,6 +16,7 @@ class MapScreen extends StatelessWidget {
     return Consumer<CafeViewModel>(
       builder: (context, cafeViewModel, _) {
         final cafes = cafeViewModel.nearbyCafes;
+        final showHints = cafeViewModel.showMapHints;
 
         return Scaffold(
           backgroundColor: CafeColors.background,
@@ -51,19 +52,20 @@ class MapScreen extends StatelessWidget {
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                             const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                _CompactChip(
-                                  label:
-                                      'Ban kinh ${(cafeViewModel.mapRadiusMeters / 1000).toStringAsFixed(1)} km',
-                                ),
-                                _CompactChip(
-                                  label: _sortLabel(cafeViewModel.sortMode),
-                                ),
-                              ],
-                            ),
+                            if (showHints)
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  _CompactChip(
+                                    label:
+                                        'Ban kinh ${(cafeViewModel.mapRadiusMeters / 1000).toStringAsFixed(1)} km',
+                                  ),
+                                  _CompactChip(
+                                    label: _sortLabel(cafeViewModel.sortMode),
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
                       ),
@@ -122,7 +124,8 @@ class MapScreen extends StatelessWidget {
                                 style: Theme.of(context).textTheme.titleLarge,
                               ),
                             ),
-                            if (cafeViewModel.highlightedNearbyCafe case final cafe?)
+                            if (showHints &&
+                                cafeViewModel.highlightedNearbyCafe case final cafe?)
                               _DistanceBadge(
                                 distanceMeters: cafe.distanceMeters,
                               ),

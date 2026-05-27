@@ -6,6 +6,7 @@ import 'auth/register_screen.dart';
 import 'cafes/repositories/local_cafe_repository.dart';
 import 'cafes/viewmodels/cafe_viewmodel.dart';
 import 'onboarding/onboarding_screen.dart';
+import 'settings/settings_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
 import 'services/onboarding_service.dart';
@@ -34,6 +35,7 @@ class LocalCafeHunterApp extends StatelessWidget {
           AppRoutes.login: (context) => const LoginScreen(),
           AppRoutes.register: (context) => const RegisterScreen(),
           AppRoutes.onboarding: (context) => const OnboardingScreen(),
+          AppRoutes.settings: (context) => const SettingsScreen(),
           AppRoutes.home: (context) => const _AuthGate(),
         },
       ),

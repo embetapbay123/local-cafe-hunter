@@ -106,10 +106,20 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         final pages = [
-          _DiscoverPage(searchController: _searchController),
-          _SearchPage(searchController: _searchController),
-          const _SavedPage(),
-          _ProfilePreview(onSignedOut: _handleSignOut),
+          _DiscoverPage(
+            searchController: _searchController,
+            compactCards: cafeViewModel.compactCafeCards,
+          ),
+          _SearchPage(
+            searchController: _searchController,
+            compactCards: cafeViewModel.compactCafeCards,
+          ),
+          _SavedPage(compactCards: cafeViewModel.compactCafeCards),
+          _ProfilePreview(
+            onSignedOut: _handleSignOut,
+            onOpenSettings: () =>
+                Navigator.of(context).pushNamed(AppRoutes.settings),
+          ),
         ];
 
         return Scaffold(
@@ -167,9 +177,13 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _DiscoverPage extends StatelessWidget {
-  const _DiscoverPage({required this.searchController});
+  const _DiscoverPage({
+    required this.searchController,
+    required this.compactCards,
+  });
 
   final TextEditingController searchController;
+  final bool compactCards;
 
   @override
   Widget build(BuildContext context) {
@@ -217,6 +231,7 @@ class _DiscoverPage extends StatelessWidget {
                         final cafe = featured[index];
                         return _FeaturedCafeCard(
                           cafe: cafe,
+                          compact: compactCards,
                           onOpenDetail: () =>
                               _openCafeDetailScreen(context, cafe.id),
                           onFavouriteToggle: () =>
@@ -242,12 +257,13 @@ class _DiscoverPage extends StatelessWidget {
                   ...cafes.map(
                     (cafe) => Padding(
                       padding: const EdgeInsets.only(bottom: 14),
-                      child: _CafeCard(
-                        cafe: cafe,
-                        onOpenDetail: () =>
-                            _openCafeDetailScreen(context, cafe.id),
-                        onFavouriteToggle: () =>
-                            cafeViewModel.toggleFavourite(cafe.id),
+                    child: _CafeCard(
+                      cafe: cafe,
+                      compact: compactCards,
+                      onOpenDetail: () =>
+                          _openCafeDetailScreen(context, cafe.id),
+                      onFavouriteToggle: () =>
+                          cafeViewModel.toggleFavourite(cafe.id),
                       ),
                     ),
                   ),
@@ -317,9 +333,13 @@ class _DiscoverPage extends StatelessWidget {
 }
 
 class _SearchPage extends StatelessWidget {
-  const _SearchPage({required this.searchController});
+  const _SearchPage({
+    required this.searchController,
+    required this.compactCards,
+  });
 
   final TextEditingController searchController;
+  final bool compactCards;
 
   @override
   Widget build(BuildContext context) {
@@ -413,6 +433,7 @@ class _SearchPage extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 14),
                     child: _CafeCard(
                       cafe: cafe,
+                      compact: compactCards,
                       onOpenDetail: () =>
                           _openCafeDetailScreen(context, cafe.id),
                       onFavouriteToggle: () =>
@@ -429,7 +450,9 @@ class _SearchPage extends StatelessWidget {
 }
 
 class _SavedPage extends StatelessWidget {
-  const _SavedPage();
+  const _SavedPage({required this.compactCards});
+
+  final bool compactCards;
 
   @override
   Widget build(BuildContext context) {
@@ -491,6 +514,7 @@ class _SavedPage extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 14),
                     child: _CafeCard(
                       cafe: cafe,
+                      compact: compactCards,
                       onOpenDetail: () => _openCafeDetailScreen(context, cafe.id),
                       onFavouriteToggle: () =>
                           cafeViewModel.toggleFavourite(cafe.id),
@@ -804,9 +828,13 @@ class _MapLaunchCard extends StatelessWidget {
 }
 
 class _ProfilePreview extends StatelessWidget {
-  const _ProfilePreview({required this.onSignedOut});
+  const _ProfilePreview({
+    required this.onSignedOut,
+    required this.onOpenSettings,
+  });
 
   final Future<void> Function() onSignedOut;
+  final VoidCallback onOpenSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -912,6 +940,12 @@ class _ProfilePreview extends StatelessWidget {
                   },
                 ),
               const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: onOpenSettings,
+                icon: const Icon(Icons.settings_outlined),
+                label: const Text('Cai dat'),
+              ),
+              const SizedBox(height: 10),
               FilledButton(
                 onPressed: onSignedOut,
                 child: const Text('Dang xuat'),
@@ -1962,11 +1996,13 @@ class _SectionLabel extends StatelessWidget {
 class _FeaturedCafeCard extends StatelessWidget {
   const _FeaturedCafeCard({
     required this.cafe,
+    required this.compact,
     required this.onOpenDetail,
     required this.onFavouriteToggle,
   });
 
   final Cafe cafe;
+  final bool compact;
   final VoidCallback onOpenDetail;
   final VoidCallback onFavouriteToggle;
 
@@ -1983,16 +2019,16 @@ class _FeaturedCafeCard extends StatelessWidget {
             gradient: LinearGradient(colors: cafe.gradientColors),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(compact ? 13 : 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 12,
-                        vertical: 8,
+                        vertical: compact ? 6 : 8,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.18),
@@ -2023,9 +2059,9 @@ class _FeaturedCafeCard extends StatelessWidget {
                   cafe.name,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 21,
+                    fontSize: compact ? 19 : 21,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -2065,11 +2101,13 @@ class _FeaturedCafeCard extends StatelessWidget {
 class _CafeCard extends StatelessWidget {
   const _CafeCard({
     required this.cafe,
+    required this.compact,
     required this.onOpenDetail,
     required this.onFavouriteToggle,
   });
 
   final Cafe cafe;
+  final bool compact;
   final VoidCallback onOpenDetail;
   final VoidCallback onFavouriteToggle;
 
@@ -2079,7 +2117,7 @@ class _CafeCard extends StatelessWidget {
       onTap: onOpenDetail,
       borderRadius: BorderRadius.circular(24),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(compact ? 12 : 14),
         decoration: BoxDecoration(
           color: CafeColors.surface,
           borderRadius: BorderRadius.circular(24),
@@ -2090,8 +2128,8 @@ class _CafeCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 92,
-              height: 92,
+              width: compact ? 80 : 92,
+              height: compact ? 80 : 92,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
                 gradient: LinearGradient(colors: cafe.gradientColors),
@@ -2102,16 +2140,16 @@ class _CafeCard extends StatelessWidget {
                 color: Colors.white,
               ),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: compact ? 12 : 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     cafe.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: CafeColors.dark,
-                      fontSize: 18,
+                      fontSize: compact ? 16 : 18,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
