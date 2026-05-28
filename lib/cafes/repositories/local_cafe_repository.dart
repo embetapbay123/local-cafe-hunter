@@ -1,17 +1,67 @@
 import '../data/local_cafe_seed.dart';
 import '../models/cafe.dart';
+import '../models/cafe_catalog_sync_report.dart';
 import '../models/collection.dart';
 import '../models/review.dart';
 import '../models/user_profile.dart';
+import '../services/cafe_catalog_sync_service.dart';
 import '../utils/geo_math.dart';
 import 'cafe_repository.dart';
 
 class LocalCafeRepository implements CafeRepository {
+  LocalCafeRepository({CafeCatalogSyncService? catalogSyncService})
+      : _catalogSyncService = catalogSyncService ?? const CafeCatalogSyncService();
+
+  final CafeCatalogSyncService _catalogSyncService;
+  Future<CafeCatalogSyncReport>? _catalogSyncTask;
   List<Cafe> _cafes = List<Cafe>.from(LocalCafeSeed.cafes);
   List<CafeCollection> _collections = List<CafeCollection>.from(
     LocalCafeSeed.collections,
   );
   UserProfile _userProfile = LocalCafeSeed.userProfile;
+
+  Future<void> _ensureCatalogSynced() async {
+    await syncCatalog();
+  }
+
+  List<Cafe> _mergeSyncedCatalog(List<Cafe> syncedCafes) {
+    final localById = {
+      for (final cafe in _cafes) cafe.id: cafe,
+    };
+    final syncedIds = <String>{};
+
+    final merged = syncedCafes.map((remoteCafe) {
+      syncedIds.add(remoteCafe.id);
+      final localCafe = localById[remoteCafe.id];
+      if (localCafe == null) {
+        return remoteCafe;
+      }
+
+      return remoteCafe.copyWith(
+        isFavourite: localCafe.isFavourite,
+        menu: localCafe.menu.isNotEmpty ? localCafe.menu : remoteCafe.menu,
+        reviews:
+            localCafe.reviews.isNotEmpty ? localCafe.reviews : remoteCafe.reviews,
+        distanceMeters: localCafe.distanceMeters,
+      );
+    }).toList();
+
+    final localOnly = _cafes.where((cafe) => !syncedIds.contains(cafe.id));
+    return [...merged, ...localOnly];
+  }
+
+  @override
+  Future<CafeCatalogSyncReport> syncCatalog({bool forceRefresh = false}) async {
+    if (forceRefresh) {
+      _catalogSyncTask = null;
+    }
+
+    _catalogSyncTask ??= _catalogSyncService.syncCatalog().then((report) {
+      _cafes = _mergeSyncedCatalog(report.cafes);
+      return report;
+    });
+    return _catalogSyncTask!;
+  }
 
   @override
   Future<void> addReview(
@@ -19,6 +69,7 @@ class LocalCafeRepository implements CafeRepository {
     Review review, {
     String? imagePath,
   }) async {
+    await _ensureCatalogSynced();
     _cafes = _cafes.map((cafe) {
       if (cafe.id != cafeId) return cafe;
       final updatedReviews = [review, ...cafe.reviews];
@@ -28,6 +79,7 @@ class LocalCafeRepository implements CafeRepository {
 
   @override
   Future<void> updateReview(String cafeId, Review review) async {
+    await _ensureCatalogSynced();
     _cafes = _cafes.map((cafe) {
       if (cafe.id != cafeId) return cafe;
       final updatedReviews = cafe.reviews.map((item) {
@@ -40,6 +92,7 @@ class LocalCafeRepository implements CafeRepository {
 
   @override
   Future<void> deleteReview(String cafeId, String reviewId) async {
+    await _ensureCatalogSynced();
     _cafes = _cafes.map((cafe) {
       if (cafe.id != cafeId) return cafe;
       final updatedReviews = cafe.reviews
@@ -51,6 +104,7 @@ class LocalCafeRepository implements CafeRepository {
 
   @override
   Future<Cafe?> getCafeById(String id) async {
+    await _ensureCatalogSynced();
     try {
       return _cafes.firstWhere((cafe) => cafe.id == id);
     } catch (_) {
@@ -59,22 +113,32 @@ class LocalCafeRepository implements CafeRepository {
   }
 
   @override
-  Future<List<Cafe>> getCafes() async => List<Cafe>.from(_cafes);
+  Future<List<Cafe>> getCafes() async {
+    await _ensureCatalogSynced();
+    return List<Cafe>.from(_cafes);
+  }
 
   @override
-  Future<List<CafeCollection>> getCollections() async =>
-      List<CafeCollection>.from(_collections);
+  Future<List<CafeCollection>> getCollections() async {
+    await _ensureCatalogSynced();
+    return List<CafeCollection>.from(_collections);
+  }
 
   @override
   Future<List<Cafe>> getFavouriteCafes() async {
+    await _ensureCatalogSynced();
     return _cafes.where((cafe) => cafe.isFavourite).toList();
   }
 
   @override
-  Future<UserProfile> getUserProfile() async => _userProfile;
+  Future<UserProfile> getUserProfile() async {
+    await _ensureCatalogSynced();
+    return _userProfile;
+  }
 
   @override
   Future<List<Review>> getReviewHistory() async {
+    await _ensureCatalogSynced();
     final reviews = _cafes.expand((cafe) => cafe.reviews).toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return reviews;
@@ -85,6 +149,7 @@ class LocalCafeRepository implements CafeRepository {
     required String query,
     List<String> filters = const [],
   }) async {
+    await _ensureCatalogSynced();
     final normalizedQuery = query.trim().toLowerCase();
     return _cafes.where((cafe) {
       final queryMatches = normalizedQuery.isEmpty ||
@@ -108,6 +173,7 @@ class LocalCafeRepository implements CafeRepository {
     String query = '',
     List<String> filters = const [],
   }) async {
+    await _ensureCatalogSynced();
     final normalizedQuery = query.trim().toLowerCase();
     final normalizedFilters = filters.map((filter) => filter.toLowerCase());
 
@@ -145,6 +211,7 @@ class LocalCafeRepository implements CafeRepository {
 
   @override
   Future<void> toggleFavourite(String cafeId) async {
+    await _ensureCatalogSynced();
     _cafes = _cafes.map((cafe) {
       if (cafe.id != cafeId) return cafe;
       return cafe.copyWith(isFavourite: !cafe.isFavourite);
@@ -153,6 +220,7 @@ class LocalCafeRepository implements CafeRepository {
 
   @override
   Future<void> updateUserProfile(UserProfile profile) async {
+    await _ensureCatalogSynced();
     final normalizedProfile = profile.copyWith(
       displayName: profile.displayName.trim(),
       tagline: profile.tagline.trim(),
@@ -186,6 +254,7 @@ class LocalCafeRepository implements CafeRepository {
 
   @override
   Future<void> createCollection(String name, List<String> cafeIds) async {
+    await _ensureCatalogSynced();
     _collections = [
       ..._collections,
       CafeCollection(
@@ -198,6 +267,7 @@ class LocalCafeRepository implements CafeRepository {
 
   @override
   Future<void> renameCollection(String collectionId, String name) async {
+    await _ensureCatalogSynced();
     _collections = _collections.map((collection) {
       if (collection.id != collectionId) return collection;
       return collection.copyWith(name: name.trim());
@@ -206,6 +276,7 @@ class LocalCafeRepository implements CafeRepository {
 
   @override
   Future<void> deleteCollection(String collectionId) async {
+    await _ensureCatalogSynced();
     _collections = _collections
         .where((collection) => collection.id != collectionId)
         .toList();
@@ -213,6 +284,7 @@ class LocalCafeRepository implements CafeRepository {
 
   @override
   Future<void> addCafeToCollection(String collectionId, String cafeId) async {
+    await _ensureCatalogSynced();
     _collections = _collections.map((collection) {
       if (collection.id != collectionId) return collection;
       if (collection.cafeIds.contains(cafeId)) return collection;
@@ -227,6 +299,7 @@ class LocalCafeRepository implements CafeRepository {
     String collectionId,
     String cafeId,
   ) async {
+    await _ensureCatalogSynced();
     _collections = _collections.map((collection) {
       if (collection.id != collectionId) return collection;
       return collection.copyWith(

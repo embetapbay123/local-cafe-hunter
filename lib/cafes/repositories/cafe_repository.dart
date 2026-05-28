@@ -1,10 +1,12 @@
 import '../models/cafe.dart';
+import '../models/cafe_catalog_sync_report.dart';
 import '../models/collection.dart';
 import '../models/review.dart';
 import '../models/user_profile.dart';
 
 abstract class CafeRepository {
   Future<List<Cafe>> getCafes();
+  Future<CafeCatalogSyncReport> syncCatalog({bool forceRefresh = false});
   Future<Cafe?> getCafeById(String id);
   Future<List<Cafe>> searchCafes({
     required String query,
