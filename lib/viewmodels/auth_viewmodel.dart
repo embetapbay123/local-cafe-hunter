@@ -4,7 +4,10 @@ import '../services/auth_service.dart';
 enum AuthState { initial, loading, authenticated, unauthenticated, error }
 
 class AuthViewModel extends ChangeNotifier {
-  final AuthService _authService = AuthService();
+  AuthViewModel({AuthService? authService})
+      : _authService = authService ?? AuthService();
+
+  final AuthService _authService;
 
   AuthState _state = AuthState.initial;
   String? _errorMessage;
