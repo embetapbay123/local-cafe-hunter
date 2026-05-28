@@ -5,6 +5,8 @@ import 'auth/login_screen.dart';
 import 'auth/register_screen.dart';
 import 'cafes/repositories/local_cafe_repository.dart';
 import 'cafes/viewmodels/cafe_viewmodel.dart';
+import 'analytics/analytics_monitor_screen.dart';
+import 'analytics/viewmodels/analytics_monitor_viewmodel.dart';
 import 'notifications/notification_center_screen.dart';
 import 'notifications/viewmodels/notification_center_viewmodel.dart';
 import 'onboarding/onboarding_screen.dart';
@@ -30,6 +32,9 @@ class LocalCafeHunterApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => NotificationCenterViewModel()..load(),
         ),
+        ChangeNotifierProvider(
+          create: (_) => AnalyticsMonitorViewModel()..load(),
+        ),
       ],
       child: MaterialApp(
         title: 'Local Cafe Hunter',
@@ -40,6 +45,7 @@ class LocalCafeHunterApp extends StatelessWidget {
           AppRoutes.login: (context) => const LoginScreen(),
           AppRoutes.register: (context) => const RegisterScreen(),
           AppRoutes.onboarding: (context) => const OnboardingScreen(),
+          AppRoutes.analytics: (context) => const AnalyticsMonitorScreen(),
           AppRoutes.notifications: (context) => const NotificationCenterScreen(),
           AppRoutes.settings: (context) => const SettingsScreen(),
           AppRoutes.home: (context) => const _AuthGate(),

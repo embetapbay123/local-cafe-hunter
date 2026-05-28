@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../analytics/services/analytics_monitor_service.dart';
 import '../shared/app_routes.dart';
 import '../services/onboarding_service.dart';
 import '../notifications/services/notification_center_service.dart';
@@ -89,6 +90,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     await _onboardingService.markCompleted();
     await NotificationCenterService().recordOnboardingComplete();
+    await AnalyticsMonitorService.instance.recordAction(
+      'onboarding_completed',
+    );
 
     if (!mounted) return;
 

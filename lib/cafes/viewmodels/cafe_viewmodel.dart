@@ -8,6 +8,7 @@ import '../models/collection.dart';
 import '../models/review.dart';
 import '../models/user_profile.dart';
 import '../repositories/cafe_repository.dart';
+import '../../analytics/services/analytics_monitor_service.dart';
 import '../../notifications/services/notification_center_service.dart';
 import '../../services/settings_service.dart';
 
@@ -126,8 +127,20 @@ class CafeViewModel extends ChangeNotifier {
         category: InAppNotificationCategory.system,
         dedupeKey: 'app-ready',
       );
+      await AnalyticsMonitorService.instance.recordScreenView(
+        'home_data_ready',
+        details: {
+          'cafes': _cafes.length.toString(),
+          'collections': _collections.length.toString(),
+          'reviews': _reviewHistory.length.toString(),
+        },
+      );
     } catch (error) {
       _errorMessage = error.toString();
+      await AnalyticsMonitorService.instance.recordError(
+        error,
+        context: 'cafe_viewmodel_load',
+      );
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -145,6 +158,12 @@ class CafeViewModel extends ChangeNotifier {
   void setSelectedTabIndex(int index) {
     if (_selectedTabIndex == index) return;
     _selectedTabIndex = index;
+    unawaited(
+      AnalyticsMonitorService.instance.recordAction(
+        'tab_changed',
+        details: {'index': index.toString()},
+      ),
+    );
     notifyListeners();
   }
 
@@ -152,6 +171,10 @@ class CafeViewModel extends ChangeNotifier {
     if (_compactCafeCards == value) return;
     _compactCafeCards = value;
     await SettingsService().setCompactCafeCards(value);
+    await AnalyticsMonitorService.instance.recordAction(
+      'compact_cards_toggled',
+      details: {'enabled': value.toString()},
+    );
     notifyListeners();
   }
 
@@ -159,6 +182,10 @@ class CafeViewModel extends ChangeNotifier {
     if (_showMapHints == value) return;
     _showMapHints = value;
     await SettingsService().setShowMapHints(value);
+    await AnalyticsMonitorService.instance.recordAction(
+      'map_hints_toggled',
+      details: {'enabled': value.toString()},
+    );
     notifyListeners();
   }
 
@@ -166,6 +193,9 @@ class CafeViewModel extends ChangeNotifier {
     await SettingsService().reset();
     _compactCafeCards = false;
     _showMapHints = true;
+    await AnalyticsMonitorService.instance.recordAction(
+      'settings_reset',
+    );
     notifyListeners();
   }
 
@@ -173,6 +203,14 @@ class CafeViewModel extends ChangeNotifier {
     final normalized = value.trim().toLowerCase();
     if (_searchQuery == normalized) return;
     _searchQuery = normalized;
+    if (normalized.isNotEmpty) {
+      unawaited(
+        AnalyticsMonitorService.instance.recordAction(
+          'search_changed',
+          details: {'query_length': normalized.length.toString()},
+        ),
+      );
+    }
     unawaited(_loadNearbyCafes());
     notifyListeners();
   }
@@ -231,6 +269,10 @@ class CafeViewModel extends ChangeNotifier {
   Future<void> toggleFavourite(String cafeId) async {
     await _repository.toggleFavourite(cafeId);
     _cafes = await _repository.getCafes();
+    await AnalyticsMonitorService.instance.recordAction(
+      'favourite_toggled',
+      details: {'cafe_id': cafeId},
+    );
     await _loadNearbyCafes(notify: false);
     notifyListeners();
   }
@@ -254,6 +296,10 @@ class CafeViewModel extends ChangeNotifier {
     await _repository.addReview(cafeId, review);
     _cafes = await _repository.getCafes();
     _reviewHistory = await _repository.getReviewHistory();
+    await AnalyticsMonitorService.instance.recordAction(
+      'review_added',
+      details: {'cafe_id': cafeId},
+    );
     await _loadNearbyCafes(notify: false);
     notifyListeners();
   }
@@ -273,6 +319,10 @@ class CafeViewModel extends ChangeNotifier {
     );
     _cafes = await _repository.getCafes();
     _reviewHistory = await _repository.getReviewHistory();
+    await AnalyticsMonitorService.instance.recordAction(
+      'review_updated',
+      details: {'cafe_id': cafeId, 'review_id': review.id},
+    );
     await _loadNearbyCafes(notify: false);
     notifyListeners();
   }
@@ -284,6 +334,10 @@ class CafeViewModel extends ChangeNotifier {
     await _repository.deleteReview(cafeId, reviewId);
     _cafes = await _repository.getCafes();
     _reviewHistory = await _repository.getReviewHistory();
+    await AnalyticsMonitorService.instance.recordAction(
+      'review_deleted',
+      details: {'cafe_id': cafeId, 'review_id': reviewId},
+    );
     await _loadNearbyCafes(notify: false);
     notifyListeners();
   }
@@ -293,6 +347,9 @@ class CafeViewModel extends ChangeNotifier {
     _userProfile = await _repository.getUserProfile();
     _cafes = await _repository.getCafes();
     _reviewHistory = await _repository.getReviewHistory();
+    await AnalyticsMonitorService.instance.recordAction(
+      'profile_updated',
+    );
     await _loadNearbyCafes(notify: false);
     notifyListeners();
   }
@@ -300,24 +357,40 @@ class CafeViewModel extends ChangeNotifier {
   Future<void> createCollection(String name, List<String> cafeIds) async {
     await _repository.createCollection(name, cafeIds);
     _collections = await _repository.getCollections();
+    await AnalyticsMonitorService.instance.recordAction(
+      'collection_created',
+      details: {'name_length': name.trim().length.toString()},
+    );
     notifyListeners();
   }
 
   Future<void> renameCollection(String collectionId, String name) async {
     await _repository.renameCollection(collectionId, name);
     _collections = await _repository.getCollections();
+    await AnalyticsMonitorService.instance.recordAction(
+      'collection_renamed',
+      details: {'collection_id': collectionId},
+    );
     notifyListeners();
   }
 
   Future<void> deleteCollection(String collectionId) async {
     await _repository.deleteCollection(collectionId);
     _collections = await _repository.getCollections();
+    await AnalyticsMonitorService.instance.recordAction(
+      'collection_deleted',
+      details: {'collection_id': collectionId},
+    );
     notifyListeners();
   }
 
   Future<void> addCafeToCollection(String collectionId, String cafeId) async {
     await _repository.addCafeToCollection(collectionId, cafeId);
     _collections = await _repository.getCollections();
+    await AnalyticsMonitorService.instance.recordAction(
+      'collection_cafe_added',
+      details: {'collection_id': collectionId, 'cafe_id': cafeId},
+    );
     notifyListeners();
   }
 
@@ -327,6 +400,10 @@ class CafeViewModel extends ChangeNotifier {
   ) async {
     await _repository.removeCafeFromCollection(collectionId, cafeId);
     _collections = await _repository.getCollections();
+    await AnalyticsMonitorService.instance.recordAction(
+      'collection_cafe_removed',
+      details: {'collection_id': collectionId, 'cafe_id': cafeId},
+    );
     notifyListeners();
   }
 
