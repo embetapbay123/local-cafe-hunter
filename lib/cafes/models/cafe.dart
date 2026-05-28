@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'menu_item.dart';
 import 'review.dart';
 
-enum CafeSource { localSeed, overpass }
+enum CafeSource { localSeed, supabaseCatalog, overpass }
 
 class Cafe {
   const Cafe({

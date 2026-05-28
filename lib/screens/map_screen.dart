@@ -125,9 +125,11 @@ class MapScreen extends StatelessWidget {
                               ),
                             ),
                             if (showHints &&
-                                cafeViewModel.highlightedNearbyCafe case final cafe?)
+                                cafeViewModel.highlightedNearbyCafe != null)
                               _DistanceBadge(
-                                distanceMeters: cafe.distanceMeters,
+                                distanceMeters:
+                                    cafeViewModel.highlightedNearbyCafe!
+                                        .distanceMeters,
                               ),
                           ],
                         ),
