@@ -1,6 +1,27 @@
 -- Local Cafe Hunter - Supabase schema
 -- Run this in Supabase SQL Editor before testing the app.
 
+create table if not exists public.cafe_catalog (
+  id text primary key,
+  name text not null,
+  address text not null,
+  description text not null,
+  short_note text not null default '',
+  rating numeric(2, 1) not null default 0,
+  review_count integer not null default 0,
+  price_range text not null,
+  opening_hours text not null,
+  latitude double precision not null,
+  longitude double precision not null,
+  image_key text not null,
+  gradient_start text not null,
+  gradient_end text not null,
+  amenities text[] not null default '{}',
+  source text not null default 'supabase_catalog',
+  osm_id text,
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   display_name text not null,
@@ -46,11 +67,18 @@ create table if not exists public.reviews (
   image_url text
 );
 
+alter table public.cafe_catalog enable row level security;
 alter table public.profiles enable row level security;
 alter table public.favorite_cafes enable row level security;
 alter table public.collections enable row level security;
 alter table public.collection_cafes enable row level security;
 alter table public.reviews enable row level security;
+
+create policy "catalog_select_all"
+on public.cafe_catalog
+for select
+to anon, authenticated
+using (true);
 
 create policy "profiles_select_own"
 on public.profiles
@@ -196,3 +224,81 @@ with check (
   bucket_id = 'review-images'
   and (storage.foldername(name))[1] = auth.uid()::text
 );
+
+insert into public.cafe_catalog (
+  id,
+  name,
+  address,
+  description,
+  short_note,
+  rating,
+  review_count,
+  price_range,
+  opening_hours,
+  latitude,
+  longitude,
+  image_key,
+  gradient_start,
+  gradient_end,
+  amenities,
+  source,
+  osm_id
+)
+values
+  (
+    'ther-coffee',
+    'Ther Coffee',
+    '937 Ngo Quyen, Da Nang',
+    'Khong gian am cung, nhieu goc ngoi thoang, mui ca phe ro va phu hop cho buoi hen nhe nhang.',
+    'Khong gian am cung, ca phe thom, vua mieng :>',
+    4.5,
+    12,
+    '30k - 65k',
+    '07:00 - 23:00',
+    16.0674,
+    108.2311,
+    'street-cups',
+    '#AAD0D7',
+    '#6E8A95',
+    array['Wifi manh', 'May lanh', 'Cho ngoai troi'],
+    'supabase_catalog',
+    null
+  ),
+  (
+    'nang-som-coffee',
+    'Nang Som Coffee',
+    '112 Luong The Vinh, Da Nang',
+    'Ban cong nhin duong dep, thuc uong de uong va rat hop cho buoi sang y yen.',
+    'Tra dau ngon nen thu, gia ca phai chang <3',
+    4.8,
+    30,
+    '28k - 70k',
+    '06:30 - 22:30',
+    16.0608,
+    108.2207,
+    'morning-espresso',
+    '#B98A59',
+    '#5C3A1F',
+    array['Wifi manh', 'Yen tinh', 'Cho cam sac'],
+    'supabase_catalog',
+    null
+  )
+on conflict (id) do update
+set
+  name = excluded.name,
+  address = excluded.address,
+  description = excluded.description,
+  short_note = excluded.short_note,
+  rating = excluded.rating,
+  review_count = excluded.review_count,
+  price_range = excluded.price_range,
+  opening_hours = excluded.opening_hours,
+  latitude = excluded.latitude,
+  longitude = excluded.longitude,
+  image_key = excluded.image_key,
+  gradient_start = excluded.gradient_start,
+  gradient_end = excluded.gradient_end,
+  amenities = excluded.amenities,
+  source = excluded.source,
+  osm_id = excluded.osm_id,
+  updated_at = now();

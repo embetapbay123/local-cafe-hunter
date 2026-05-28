@@ -104,12 +104,13 @@ class CafeViewModel extends ChangeNotifier {
     return null;
   }
 
-  Future<void> load() async {
+  Future<void> load({bool forceCatalogRefresh = false}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
+      await _repository.syncCatalog(forceRefresh: forceCatalogRefresh);
       _cafes = await _repository.getCafes();
       _collections = await _repository.getCollections();
       _reviewHistory = await _repository.getReviewHistory();
@@ -126,7 +127,7 @@ class CafeViewModel extends ChangeNotifier {
   }
 
   Future<void> refresh() async {
-    await load();
+    await load(forceCatalogRefresh: true);
   }
 
   Future<void> refreshNearbyCafes() async {
