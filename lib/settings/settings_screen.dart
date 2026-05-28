@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../analytics/viewmodels/analytics_monitor_viewmodel.dart';
 import '../notifications/viewmodels/notification_center_viewmodel.dart';
 import '../shared/app_routes.dart';
 import '../theme/cafe_theme.dart';
@@ -65,6 +66,36 @@ class SettingsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               _SettingsSection(
+                title: 'Analytics',
+                subtitle:
+                    'Xem event, screen view va error local de monitor nhanh tinh trang app.',
+                children: [
+                  Consumer<AnalyticsMonitorViewModel>(
+                    builder: (context, analyticsViewModel, _) {
+                      return ListTile(
+                        leading: const Icon(Icons.query_stats_rounded),
+                        title: const Text('Mo analytics monitor'),
+                        subtitle: Text(
+                          analyticsViewModel.errorCount == 0
+                              ? 'Hien tai khong co error local.'
+                              : '${analyticsViewModel.errorCount} error da duoc ghi lai.',
+                        ),
+                        onTap: () async {
+                          await analyticsViewModel.recordAction(
+                            'open_analytics_monitor',
+                          );
+                          if (!context.mounted) return;
+                          Navigator.of(context).pushNamed(
+                            AppRoutes.analytics,
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _SettingsSection(
                 title: 'Thong bao',
                 subtitle:
                     'Hop thu noi ung dung luu cac su kien sync, onboarding va preference.',
@@ -79,8 +110,17 @@ class SettingsScreen extends StatelessWidget {
                               ? 'Khong co thong bao chua doc.'
                               : '${notificationViewModel.unreadCount} thong bao chua doc.',
                         ),
-                        onTap: () =>
-                            Navigator.of(context).pushNamed(AppRoutes.notifications),
+                        onTap: () async {
+                          await context
+                              .read<AnalyticsMonitorViewModel>()
+                              .recordAction(
+                            'open_notification_center',
+                          );
+                          if (!context.mounted) return;
+                          Navigator.of(context).pushNamed(
+                            AppRoutes.notifications,
+                          );
+                        },
                       );
                     },
                   ),
