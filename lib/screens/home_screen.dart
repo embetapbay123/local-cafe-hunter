@@ -8,6 +8,7 @@ import '../cafes/models/user_profile.dart';
 import '../cafes/viewmodels/cafe_viewmodel.dart';
 import '../screens/cafe_detail_screen.dart';
 import '../screens/map_screen.dart';
+import '../notifications/viewmodels/notification_center_viewmodel.dart';
 import '../shared/app_routes.dart';
 import '../theme/cafe_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -205,9 +206,44 @@ class _DiscoverPage extends StatelessWidget {
                   title: 'Chon quan nhanh, dung mood, de quay lai.',
                   subtitle:
                       'Home branch nay tap trung vao discover shell va danh sach cafe nen cho toan app.',
-                  trailing: IconButton.filledTonal(
-                    onPressed: () => _showFilters(context, cafeViewModel),
-                    icon: const Icon(Icons.tune_rounded),
+                  trailing: Consumer<NotificationCenterViewModel>(
+                    builder: (context, notificationViewModel, _) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              IconButton.filledTonal(
+                                onPressed: () =>
+                                    Navigator.of(context).pushNamed(
+                                  AppRoutes.notifications,
+                                ),
+                                icon: const Icon(Icons.notifications_none_rounded),
+                              ),
+                              if (notificationViewModel.hasUnread)
+                                Positioned(
+                                  right: 10,
+                                  top: 10,
+                                  child: Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: const BoxDecoration(
+                                      color: CafeColors.heart,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.filledTonal(
+                            onPressed: () => _showFilters(context, cafeViewModel),
+                            icon: const Icon(Icons.tune_rounded),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(height: 18),
