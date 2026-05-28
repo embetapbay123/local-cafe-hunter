@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../shared/app_routes.dart';
 import '../services/onboarding_service.dart';
+import '../notifications/services/notification_center_service.dart';
 import '../theme/cafe_theme.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -87,6 +88,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     });
 
     await _onboardingService.markCompleted();
+    await NotificationCenterService().recordOnboardingComplete();
 
     if (!mounted) return;
 

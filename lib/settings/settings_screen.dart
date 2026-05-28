@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../notifications/viewmodels/notification_center_viewmodel.dart';
 import '../shared/app_routes.dart';
 import '../theme/cafe_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -64,6 +65,29 @@ class SettingsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               _SettingsSection(
+                title: 'Thong bao',
+                subtitle:
+                    'Hop thu noi ung dung luu cac su kien sync, onboarding va preference.',
+                children: [
+                  Consumer<NotificationCenterViewModel>(
+                    builder: (context, notificationViewModel, _) {
+                      return ListTile(
+                        leading: const Icon(Icons.notifications_none_rounded),
+                        title: const Text('Mo hop thu thong bao'),
+                        subtitle: Text(
+                          notificationViewModel.unreadCount == 0
+                              ? 'Khong co thong bao chua doc.'
+                              : '${notificationViewModel.unreadCount} thong bao chua doc.',
+                        ),
+                        onTap: () =>
+                            Navigator.of(context).pushNamed(AppRoutes.notifications),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _SettingsSection(
                 title: 'Session',
                 subtitle: 'Xoa tro ve mac dinh hoac dang xuat khoi app.',
                 children: [
@@ -75,6 +99,13 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     onTap: () async {
                       await cafeViewModel.resetSettings();
+                      await context
+                          .read<NotificationCenterViewModel>()
+                          .recordPreferenceEvent(
+                            title: 'Da khoi phuc cau hinh mac dinh',
+                            body:
+                                'Tat ca preference local va map hints da duoc reset.',
+                          );
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
