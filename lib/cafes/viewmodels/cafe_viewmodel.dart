@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../models/cafe.dart';
+import '../../notifications/models/in_app_notification.dart';
 import '../models/collection.dart';
 import '../models/review.dart';
 import '../models/user_profile.dart';
 import '../repositories/cafe_repository.dart';
+import '../../notifications/services/notification_center_service.dart';
 import '../../services/settings_service.dart';
 
 enum CafeSortMode { relevance, ratingHigh, distanceNear, priceLow }
@@ -118,6 +120,12 @@ class CafeViewModel extends ChangeNotifier {
       await _loadSettings();
       _initializeMapCenter();
       await _loadNearbyCafes(notify: false);
+      await NotificationCenterService().recordNotification(
+        title: 'Local Cafe Hunter da san sang',
+        body: 'Da tai ${_cafes.length} quan cafe cho luong discover hien tai.',
+        category: InAppNotificationCategory.system,
+        dedupeKey: 'app-ready',
+      );
     } catch (error) {
       _errorMessage = error.toString();
     } finally {
