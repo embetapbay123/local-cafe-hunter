@@ -31,7 +31,7 @@ class LocalCafeHunterApp extends StatelessWidget {
         routes: {
           AppRoutes.login: (context) => const LoginScreen(),
           AppRoutes.register: (context) => const RegisterScreen(),
-          AppRoutes.home: (context) => const HomeScreen(),
+          AppRoutes.home: (context) => const _AuthGate(),
         },
       ),
     );
